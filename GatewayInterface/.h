@@ -62,6 +62,13 @@
     #define Gateway\
         GetGatewayInterface()->
 
+
+    #define RXData\
+        nair->data
+
+    #define RXMove(length) \
+        RXData+=length
+
     #define IEEE802_3TXStart\
         struct sk_buff*skb=Gateway TXLH.Create(gd);\
         if(!skb)

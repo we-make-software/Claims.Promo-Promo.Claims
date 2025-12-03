@@ -84,7 +84,29 @@ Void DefaultInit(struct NetworkAdapterDevice*nad){
     Print("Gateway DefaultInit");
     //init to something new we know the packet wee need to make DHCP packet
 }
+
+
+
+Void DoEthertypeRX(u16* value, struct GatewayDevice* gd, struct NetworkAdapterInterfaceReceiver* nair){
+    GatewayOverFlowControl;
+    RXMove(2);
+
+    printk(KERN_INFO "DoEthertypeRX called\n");  // simple debug
+
+    if(*value==InternetProtocolVersion6 Default.Type){
+        printk(KERN_INFO "IPv6 branch\n");
+        return;
+    }
+    if(*value==InternetProtocolVersion4 Default.Type){
+        printk(KERN_INFO "IPv4 branch\n");
+        return;
+    }
+
+    printk(KERN_INFO "ARP or other type\n");
+}
+
 Void DoRX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
+       printk(KERN_INFO "DoRXn");
     struct sysinfo info;
     si_meminfo(&info); 
     Atomic64Set(ApplicationProgramming Default.spaces,(u64)info.freeram * info.mem_unit);
@@ -92,7 +114,8 @@ Void DoRX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
     GatewayOverFlowControl;
     AtomicIncrements(&gd->status.request);
     if(!gd||gd->Default.block||!HasEnoughSpaceBytes(1073741824))goto Cancel;
-        Print("Gateway RX");  
+    RXMove(6);
+    DoEthertypeRX((u16*)(RXData),gd,nair);
     Cancel:
     AtomicDecrements(&gd->status.request);
     DefaultCancel(gd,NULL);
@@ -110,7 +133,7 @@ RX(struct NetworkAdapterInterfaceReceiver*nair){
     Lock(&nair->NAD->lock.GatewayDevices);
         GD=NULL;
         list_for_each_entry(GD, &nair->NAD->list.GatewayDevices, list.this) {
-            if (memcmp(nair->data,GD->Address, 6) == 0&&cancel_delayed_work_sync(&GD->BackgroundTask.worker)) {
+            if (memcmp(nair->data,GD->Address,6)==0&&cancel_delayed_work_sync(&GD->BackgroundTask.worker)) {
                 Unlock(&nair->NAD->lock.GatewayDevices);
                 DoRX(GD,nair);
                 return;

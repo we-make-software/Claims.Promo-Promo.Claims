@@ -187,8 +187,6 @@
     #define AtomicHeader(name)\
         atomic_t name    
         
-    #define Atomic64Header(name) \
-    atomic64_t name
 
     #define Atomic64Init(...) \
     { \
