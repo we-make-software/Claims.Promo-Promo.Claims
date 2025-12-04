@@ -21,8 +21,9 @@
             struct work_struct worker;
         }BackgroundTask;
     };
+    enum Process{Overloaded,Processed};
     struct NetworkAdapterDevice{
-        enum{Overloaded,Processed}Status;
+        enum Process Status;
         struct packet_type packet;
         struct{
             struct list_head this,GatewayDevices;
@@ -31,7 +32,7 @@
             ktime_t Status;
         }time;
         struct{
-            struct mutex GatewayDevices;
+            spinlock_t this,GatewayDevices;
         }lock;
     };
     #define SKBTXLibraryHeader(...)\

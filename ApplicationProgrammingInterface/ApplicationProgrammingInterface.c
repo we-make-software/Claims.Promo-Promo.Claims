@@ -46,7 +46,14 @@ static void DefaultRestart(void){
     DefaultExit();
     kernel_restart(NULL);
 }
-struct ApplicationProgrammingInterface Main={{DefaultInit,DefaultExit,DefaultRestart,DefaultGet,DefaultRegister,false}};
+static u64 DefaultSpaces(void) {
+    struct sysinfo info;
+    si_meminfo(&info);
+    return (u64)info.freeram * info.mem_unit;
+}
+
+
+struct ApplicationProgrammingInterface Main={{DefaultInit,DefaultExit,DefaultRestart,DefaultGet,DefaultRegister,DefaultSpaces,false}};
 struct ApplicationProgrammingInterface*GetApplicationProgrammingInterface(void){
     return &Main;
 }

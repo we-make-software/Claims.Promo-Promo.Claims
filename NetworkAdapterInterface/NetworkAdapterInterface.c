@@ -1,10 +1,14 @@
 #include "../.h"
 WorkBackgroundTask(NetworkAdapterInterfaceReceiver,worker){
-    if(this->NAD->Status==Overloaded||Now>MillisecondsAdd(this->start, 250))goto Cancel;
-    this->start=Now;
+    Lock(&this->NAD->lock.this);
+    if(this->NAD->Status==Overloaded||Now>this->start){
+        Unlock(&this->NAD->lock.this);
+        goto Cancel;
+    }
+    Unlock(&this->NAD->lock.this);
+    this->start=ktime_add_ms(Now,125-(u8)max(ktime_to_ms(ktime_sub(this->start, ktime_get())),0LL));
     this->data+=6;
-    Print("NetworkAdapterInterfaceReceiver RX");
-    // RXCall(Gateway)(this);
+    RXCall(Gateway)(this);
     Cancel:
     NetworkAdapter Memory.NAIR.Free(this);
 }
@@ -13,11 +17,16 @@ MemoryCacheBody(NetworkAdapterInterfaceReceiver,{
         kfree_skb(this->skb); 
 }){ 
     InitWorkNetworkAdapterInterfaceReceiverworker(this);
+    this->start= ktime_add_ms(Now, 40);
 }
 MemoryCacheBody(NetworkAdapterDevice,{
     list_del(&this->list.this);
 }){ 
     ListInit(&this->list.this,&this->list.GatewayDevices);  
+    list_add(&this->list.this, &NetworkAdapter Default.this);
+    LockInit(&this->lock.this,&this->lock.GatewayDevices);
+    this->Status=Processed;
+    this->time.Status=Now;
 }
 SKBTX(struct NetworkAdapterDevice*nad){
     if(!nad)return NULL;
@@ -29,6 +38,8 @@ SKBTX(struct NetworkAdapterDevice*nad){
     memcpy(skb_mac_header(skb)+6,nad->packet.dev->dev_addr,6);
     skb->dev=nad->packet.dev;
     skb->ip_summed=CHECKSUM_NONE;
+    ktime_t*ts=(ktime_t*)skb->cb;
+    *ts=ktime_get();
     return skb;
 }
 static int NAIPF(struct sk_buff*skb,struct net_device*,struct packet_type*pt,struct net_device*){
@@ -44,26 +55,31 @@ static int NAIPF(struct sk_buff*skb,struct net_device*,struct packet_type*pt,str
         }
     #endif  
     struct NetworkAdapterDevice*NAD=container_of(pt,struct NetworkAdapterDevice, packet); 
+    Lock(&NAD->lock.this);
     if(NAD->Status==Overloaded&&Now<NAD->time.Status){
+        Unlock(&NAD->lock.this);
         kfree_skb(skb);
         return NET_RX_DROP;
     }
+    Unlock(&NAD->lock.this);
     struct NetworkAdapterInterfaceReceiver*NAIR=NetworkAdapter Memory.NAIR.Create();
     if(!NAIR){
         kfree_skb(skb);
+        Lock(&NAD->lock.this);
         NAD->Status=Overloaded;
+        Unlock(&NAD->lock.this);
         NAD->time.Status=ktime_add(Now,ktime_set(20, 0));
         return NET_RX_DROP;
     }
+    Lock(&NAD->lock.this);
     NAD->Status=Processed;
+    Unlock(&NAD->lock.this);
     NAIR->NAD=NAD;
     NAIR->skb=skb_get(skb);
     NAIR->data=skb_mac_header(skb);
-    NAIR->start=Now;
     queue_work(system_highpri_wq,&NAIR->BackgroundTask.worker);
     return NET_RX_DROP;
 }
-
 Static u8 Exists(struct net_device*n)
 {
     struct NetworkAdapterDevice*NAD;
@@ -94,20 +110,17 @@ BootstrapBody({
     for_each_netdev(&init_net,n){
         if((n->flags&IFF_LOOPBACK)||Exists(n))continue;
         struct NetworkAdapterDevice*NAD=NetworkAdapter Memory.NAD.Create();
-        list_add(&NAD->list.this, &NetworkAdapter Default.this);
         NAD->packet=(struct packet_type){
             .dev=n,
             .type=htons(ETH_P_ALL),
             .func=NAIPF
         };
-        NAD->Status=Processed;
-        NAD->time.Status=0;
         dev_add_pack(&NAD->packet);
     }
     synchronize_net();
-   // struct NetworkAdapterDevice*NAD;
-    //list_for_each_entry(NAD,&NetworkAdapter Default.this, list.this)
-      //  Gateway Default.Init(NAD);   
+    struct NetworkAdapterDevice*NAD;
+    list_for_each_entry(NAD,&NetworkAdapter Default.this, list.this)
+        Gateway Default.Init(NAD);   
 }
 LibraryBody(NetworkAdapterInterface,
     BootstrapLibraryBody,

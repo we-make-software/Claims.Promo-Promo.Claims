@@ -13,18 +13,19 @@
             struct list_head this;
         }list;
         struct{
-            struct mutex this;
+            spinlock_t this;
         }lock;
         struct{
             AtomicHeader(response);
             AtomicHeader(request);    
             Atomic64Header(expiry);
+            Atomic64Header(worker);
         }status;
         struct{           
              struct delayed_work worker; 
         }BackgroundTask;
         struct{
-            u8 block;
+            u8 block:1,RXSpeed:1,TXSpeed:6;
         }Default;
     };
 
@@ -43,16 +44,15 @@
             void(*Exit)(struct NetworkAdapterDevice*);
             void(*Send)(struct GatewayDevice*,struct sk_buff*);   
             void(*Cancel)(struct GatewayDevice*,struct sk_buff*); 
+            void(*TXSpeed)(struct GatewayDevice*);
+            void(*RXSpeed)(struct GatewayDevice*);
             u8 Broadcast[6];
         }Default;
     };
     
-    #define GatewayOverFlowControl\
-        if(gd->NAD->Status==Overloaded||Now>MillisecondsAdd(nair->start,100)||gd->Default.block){\
-            Gateway Default.Cancel(gd,NULL);\
-            return;\
-        }\
-        nair->start=Now
+    #define GatewayOverFlowControl(...)\
+        if(gd->NAD->Status==Overloaded||Now>nair->start||gd->Default.block)__VA_ARGS__\
+        else
 
 
 
@@ -69,21 +69,21 @@
     #define RXMove(length) \
         RXData+=length
 
-    #define IEEE802_3TXStart\
-        struct sk_buff*skb=Gateway TXLH.Create(gd);\
-        if(!skb)
-    
+    #define RXGatewayCancel\
+        Gateway Default.Cancel(gd, NULL)
 
-    #define IEEE802_3TXSend\
-        Gateway Default.Send(gd->NAD,skb)
-    
-    #define TXCancel\
-        Gateway Default.Cancel(gd,skb)
+    #define TXGatewayCancel\
+        Gateway Default.Cancel(gd, skb)    
+
     
     #define GatewayDeviceExpiry(m)\
         Atomic64AddMinutes(&gd->status.expiry,m);
 
+    #define TXGatewayGetSpeed\
+        Gateway Default.TXSpeed(gd)
 
+    #define RXGatewayGetSpeed\
+        Gateway Default.RXSpeed(gd)    
     
     #define RXCall(name)\
         name NALH.RW
@@ -91,6 +91,6 @@
     #define RX(...)\
         Void RC(__VA_ARGS__)
     
-    #define HasEnoughSpaceBytes(bytes) (atomic64_read(&ApplicationProgramming Default.spaces) >= (u64)(bytes))
+    #define HasEnoughSpaceBytes(bytes) (ApplicationProgramming Default.Spaces() >= (u64)(bytes))
 
 #endif

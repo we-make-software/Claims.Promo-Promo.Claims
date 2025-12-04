@@ -84,16 +84,20 @@
         }\
         Void name##_CacheFree(struct name* this) {\
             if(!this)return;\
-            static DEFINE_MUTEX(name##_cachefree_lock);\
-            mutex_lock(&name##_cachefree_lock);\
-            if (!this) {\
-                mutex_unlock(&name##_cachefree_lock);\
+            static spinlock_t lock = __SPIN_LOCK_UNLOCKED(lock);\
+            spin_lock(&lock);\
+            if(!this){\
+                spin_unlock(&lock);\
                 return;\
             }\
             name##_EventCacheFree(this);\
+            if(!this){\
+                spin_unlock(&lock);\
+                return;\
+            }\
             kmem_cache_free(name##_MemoryCache, this);\
-            this = NULL;\
-            mutex_unlock(&name##_cachefree_lock);\
+            this=NULL;\
+            spin_unlock(&lock);\
         }\
         Void name##_CacheExit(void){\
             kmem_cache_destroy(name##_MemoryCache);\
@@ -149,21 +153,23 @@
         }
 
 
-    #define LockInit(...)\
-        {\
-            struct mutex*_LI_L[]={__VA_ARGS__,NULL};\
-            u8 _LI_I=0;\
-            while(_LI_L[_LI_I]!=NULL){\
-                mutex_init(_LI_L[_LI_I]);\
-                _LI_I++;\
-            }\
+    #define LockInit(...) \
+        { \
+            spinlock_t* _LI_L[] = { __VA_ARGS__, NULL }; \
+            u8 _LI_I = 0; \
+            while (_LI_L[_LI_I] != NULL) { \
+                spin_lock_init(_LI_L[_LI_I]); \
+                _LI_I++; \
+            } \
         }
 
-    #define Lock(name)\
-            mutex_lock(name)
+    #define Lock(name) \
+        spin_lock(name)
 
-    #define Unlock(name)\
-            mutex_unlock(name)
+
+    #define Unlock(name) \
+        spin_unlock(name)
+
     
     #define AtomicInit(...)\
         {\
@@ -209,8 +215,8 @@
                  atomic64_add(_a64am_now,name);\
         }
     
-    #define Atomic64Set(name, value)\
-        atomic64_set(&(name), (value))    
+    #define Atomic64Set(name,value)  atomic64_set(name, atomic64_read(value))
+ 
 
     #define Atomic64SetNow(name) \
         atomic64_set(&(name), ktime_to_ns(ktime_get()))
@@ -231,9 +237,8 @@
             Void ScheduleDelayedWork##name##property(struct name*this,unsigned long ms){\
                 schedule_delayed_work(&this->BackgroundTask.property,msecs_to_jiffies(ms));\
             }\
-            Void CancelDelayedWork##name##property(struct name*this){\
-                if(delayed_work_pending(&this->BackgroundTask.property))\
-                    cancel_delayed_work(&this->BackgroundTask.property);\
+            Static bool CancelDelayedWork##name##property(struct name*this){\
+                return cancel_delayed_work(&this->BackgroundTask.property);\
             }\
             Void delayed##name##property##Callback(struct name*);\
             Void delayed##name##property(struct work_struct*work){\

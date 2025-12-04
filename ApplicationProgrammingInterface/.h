@@ -11,8 +11,8 @@
             void(*Restart)(void);
             void*(*Get)(u8*);
             void(*Register)(u8*,void*);
+            u64(*Spaces)(void);
             bool Status;
-            Atomic64Header(spaces);
         }Default;    
     };
     extern

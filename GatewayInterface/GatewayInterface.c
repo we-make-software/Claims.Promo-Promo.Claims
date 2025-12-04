@@ -17,61 +17,65 @@ DelayedBackgroundTask(GatewayDevice,worker){
     Gateway Memory.GatewayDevice.Free(this);
 }
 MemoryCacheBody(GatewayDevice,{
-    /*
-    CancelDelayedWorkGatewayDeviceworker(this);
-    //send it to project that needs to know about it
     Lock(&this->NAD->lock.GatewayDevices);
         list_del(&this->list.this);
     Unlock(&this->NAD->lock.GatewayDevices);
-*/
+    Lock(&this->lock.this);
+    CabcelDelayedWorkGatewayDeviceworker(this);
+    Unlock(&this->lock.this);
+    //send it to project that needs to know about it
+
 }){ 
     InitDelayedWorkGatewayDeviceworker(this);
     ListInit(&this->list.this);
     AtomicInit(&this->status.request);
     AtomicInit(&this->status.response);
-    Atomic64Init(&this->status.expiry);
+    Atomic64Init(&this->status.expiry, &this->status.worker);
     LockInit(&this->lock.this);
     this->Default.block=false;
+    this->Default.RXSpeed=true;
+    this->Default.TXSpeed=true;
 }
-Void DefaultCancel(struct GatewayDevice*GD,struct sk_buff*skb){
-    if(!GD)return;
-    if(skb){
-        AtomicDecrements(&GD->status.response);
-        kfree_skb(skb);
-    }
-    if(!AtomicValue(&GD->status.response)&&!AtomicValue(&GD->status.request)){
-        if(!ApplicationProgramming Default.Status){
-            Lock(&GD->lock.this);
-                if(Now<Atomic64Value(&GD->status.expiry)){
-                    ScheduleDelayedWorkGatewayDeviceworker(GD,(Atomic64Value(&GD->status.expiry)>Now)?(Atomic64Value(&GD->status.expiry) - Now)/1000000ULL: 0);
-                    Unlock(&GD->lock.this);
-                    return;
-                }  
-            Unlock(&GD->lock.this);
+Void DefualtDelaySet(struct GatewayDevice*gd){
+    if(!ApplicationProgramming Default.Status)return;
+    Lock(&gd->lock.this);
+        if(Atomic64Value(&gd->status.worker) != Atomic64Value(&gd->status.expiry)){
+            if(Atomic64Value(&gd->status.expiry) == 0)
+                GatewayDeviceExpiry(5);
+            ScheduleDelayedWorkGatewayDeviceworker(gd,(Atomic64Value(&gd->status.expiry)>Now?(Atomic64Value(&gd->status.expiry)-Now):0)/1000000ULL);
+            Atomic64Set(&gd->status.worker,&gd->status.expiry);
         }
-        Gateway Memory.GatewayDevice.Free(GD);  
-    }
+    Unlock(&gd->lock.this);
+}
+Void DefaultCancel(struct GatewayDevice*gd,struct sk_buff*skb){
+    if(skb){
+        AtomicDecrements(&gd->status.response);
+        kfree_skb(skb);
+    }else AtomicDecrements(&gd->status.request);
+    DefualtDelaySet(gd);
 }
 
-Void DefaultSend(struct GatewayDevice*GD,struct sk_buff*skb){
-    Print("Gateway DefaultSend");
+Void DefaultSend(struct GatewayDevice*gd,struct sk_buff*skb){
+    s64 delta_ms=ktime_to_ms(ktime_sub(ktime_get(), *(ktime_t*)skb->cb));
     dev_queue_xmit(skb);
-    AtomicDecrements(&GD->status.response);
-    DefaultCancel(GD,NULL);
+    AtomicDecrements(&gd->status.response);
+    Lock(&gd->lock.this);
+        gd->Default.TXSpeed=delta_ms<125?true:false;
+    Unlock(&gd->lock.this);
+    DefualtDelaySet(gd);
 }
-Void DefaultExit(struct NetworkAdapterDevice*this){
-  /*
+Void DefaultExit(struct NetworkAdapterDevice*nda){
+    if(list_empty(&nda->list.GatewayDevices))
+        return;
     struct GatewayDevice *GD, *tmp;
-    Lock(&this->lock.GatewayDevices);
-    list_for_each_entry_safe(GD,tmp,&this->list.GatewayDevices,list.this)
+    list_for_each_entry_safe(GD,tmp,&nda->list.GatewayDevices,list.this)
       Gateway Memory.GatewayDevice.Free(GD);
-    Unlock(&this->lock.GatewayDevices);
-  */
-     Print("Gateway Exit");
 }
 
 
 Void DefaultInit(struct NetworkAdapterDevice*nad){
+
+       /*
     Lock(&nad->lock.GatewayDevices);
         struct GatewayDevice*gd=Gateway Memory.GatewayDevice.Create();
         if(!gd){
@@ -84,81 +88,79 @@ Void DefaultInit(struct NetworkAdapterDevice*nad){
     Unlock(&nad->lock.GatewayDevices);
     GatewayDeviceExpiry(5);
     Print("Gateway DefaultInit");
-    //init to something new we know the packet wee need to make DHCP packet
+    //init to something new we know the packet wee need to make DHCP 
+    */
 }
 
 
 
-Void DoEthertypeRX(u16* value, struct GatewayDevice* gd, struct NetworkAdapterInterfaceReceiver* nair){
-    GatewayOverFlowControl;
-    RXMove(2);
+Void DoEthertypeRX(u16*value,struct GatewayDevice* gd, struct NetworkAdapterInterfaceReceiver* nair){
+    Print("DoEthertypeRX");
+             /*     RXMove(2);
 
-    printk(KERN_INFO "DoEthertypeRX called\n");  // simple debug
+            printk(KERN_INFO "DoEthertypeRX called\n");  // simple debug
 
-    if(*value==InternetProtocolVersion6 Default.Type){
-        printk(KERN_INFO "IPv6 branch\n");
-        return;
-    }
-    if(*value==InternetProtocolVersion4 Default.Type){
-        printk(KERN_INFO "IPv4 branch\n");
-        return;
-    }
+            if(*value==InternetProtocolVersion6 Default.Type){
+                printk(KERN_INFO "IPv6 branch\n");
+                return;
+            }
+            if(*value==InternetProtocolVersion4 Default.Type){
+                printk(KERN_INFO "IPv4 branch\n");
+                return;
+            }
 
-    printk(KERN_INFO "ARP or other type\n");
+            printk(KERN_INFO "ARP or other type\n");*/
 }
 
 Void DoRX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
-     
-    struct sysinfo info;
-    si_meminfo(&info); 
-    Atomic64Set(ApplicationProgramming Default.spaces,(u64)info.freeram * info.mem_unit);
-    GatewayDeviceExpiry(5);
-    GatewayOverFlowControl;
-    AtomicIncrements(&gd->status.request);
-    if(!gd||gd->Default.block||!HasEnoughSpaceBytes(1073741824))goto Cancel;
-    RXMove(6);
-    DoEthertypeRX((u16*)(RXData),gd,nair);
-    Cancel:
-    AtomicDecrements(&gd->status.request);
-    DefaultCancel(gd,NULL);
+   AtomicIncrements(&gd->status.request);
+   RXMove(6);
+   DoEthertypeRX((u16*)(nair->data),gd,nair);
+   Lock(&gd->lock.this);
+        gd->Default.RXSpeed=ktime_to_ms(ktime_sub(ktime_get(),*(ktime_t*)nair->start))<125?true:false;
+   Unlock(&gd->lock.this);
+   RXGatewayCancel;
 }
-RX(struct NetworkAdapterInterfaceReceiver*nair){
+static bool DefaultTXSpeed(struct GatewayDevice *gd) {
+    bool value;
+    Lock(&gd->lock.this);
+    value=gd->Default.TXSpeed;
+    Unlock(&gd->lock.this);
+    return value;
+}
 
-    if(nair->NAD->Status==Overloaded||Now>MillisecondsAdd(nair->start, 250))return;
-    nair->start=Now;
-    Print("RX");
-    return;
+static bool DefaultRXSpeed(struct GatewayDevice *gd) {
+    bool value;
+    Lock(&gd->lock.this);
+    value=gd->Default.RXSpeed;
+    Unlock(&gd->lock.this);
+    return value;
+}
+
+RX(struct NetworkAdapterInterfaceReceiver*nair){
+    Lock(&nair->NAD->lock.GatewayDevices);
     struct GatewayDevice*GD;
     list_for_each_entry(GD,&nair->NAD->list.GatewayDevices, list.this) {
-        if(memcmp(nair->data,GD->Address,6)==0&&cancel_delayed_work_sync(&GD->BackgroundTask.worker)) {
+        if(memcmp(nair->data,GD->Address,6)==0&&cancel_delayed_work_sync(&GD->BackgroundTask.worker)){
+            Unlock(&nair->NAD->lock.GatewayDevices);
             DoRX(GD,nair);
             return;
         }
     }
-    Lock(&nair->NAD->lock.GatewayDevices);
-        GD=NULL;
-        list_for_each_entry(GD, &nair->NAD->list.GatewayDevices, list.this) {
-            if (memcmp(nair->data,GD->Address,6)==0&&cancel_delayed_work_sync(&GD->BackgroundTask.worker)) {
-                Unlock(&nair->NAD->lock.GatewayDevices);
-                DoRX(GD,nair);
-                return;
-            }
-        }
-        GD=Gateway Memory.GatewayDevice.Create();
-        if(!GD){
-            Unlock(&nair->NAD->lock.GatewayDevices);
-            return;
-        }
-        memcpy(GD->Address, nair->data,6);
-        GD->NAD=nair->NAD;
-        list_add(&GD->list.this,&nair->NAD->list.GatewayDevices);
+    GD=Gateway Memory.GatewayDevice.Create();
+    if(!GD){
+        Unlock(&nair->NAD->lock.GatewayDevices);
+        return;
+    }
+    memcpy(GD->Address, nair->data,6);
+    GD->NAD=nair->NAD;
+    list_add(&GD->list.this,&nair->NAD->list.GatewayDevices);
     Unlock(&nair->NAD->lock.GatewayDevices);
     DoRX(GD,nair);
 }
 BootstrapBody({
     Gateway Memory.GatewayDevice.Exit();
 }){
-    Atomic64Init(&ApplicationProgramming Default.spaces);
     Gateway Memory.GatewayDevice.Init();
 }
 LibraryBody(GatewayInterface,
@@ -166,6 +168,5 @@ LibraryBody(GatewayInterface,
     RXLibraryBody,
     SKBTXLibraryBody,
     {MemoryCacheBodyFunction(GatewayDevice)},
-    {DefaultInit,DefaultExit,DefaultSend,DefaultCancel,{255,255,255,255,255,255}}
+    {DefaultInit,DefaultExit,DefaultSend,DefaultCancel,DefaultTXSpeed,DefaultRXSpeed,{255,255,255,255,255,255}}
 )
-    
