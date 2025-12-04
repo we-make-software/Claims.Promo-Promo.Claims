@@ -21,16 +21,15 @@ MemoryCacheBody(GatewayDevice,{
         list_del(&this->list.this);
     Unlock(&this->NAD->lock.GatewayDevices);
     Lock(&this->lock.this);
-    CabcelDelayedWorkGatewayDeviceworker(this);
+    CancelDelayedWorkGatewayDeviceworker(this);
     Unlock(&this->lock.this);
     //send it to project that needs to know about it
 
 }){ 
     InitDelayedWorkGatewayDeviceworker(this);
     ListInit(&this->list.this);
-    AtomicInit(&this->status.request);
-    AtomicInit(&this->status.response);
-    Atomic64Init(&this->status.expiry, &this->status.worker);
+    AtomicInit(&this->status.request,&this->status.response);
+    Atomic64Init(&this->status.expiry,&this->status.worker);
     LockInit(&this->lock.this);
     this->Default.block=false;
     this->Default.RXSpeed=true;
@@ -48,22 +47,22 @@ Void DefualtDelaySet(struct GatewayDevice*gd){
     Unlock(&gd->lock.this);
 }
 Void DefaultCancel(struct GatewayDevice*gd,struct sk_buff*skb){
-    if(skb){
-        AtomicDecrements(&gd->status.response);
-        kfree_skb(skb);
-    }else AtomicDecrements(&gd->status.request);
+    AtomicDecrements(&gd->status.response);
+    kfree_skb(skb);
     DefualtDelaySet(gd);
 }
 
-Void DefaultSend(struct GatewayDevice*gd,struct sk_buff*skb){
-    s64 delta_ms=ktime_to_ms(ktime_sub(ktime_get(), *(ktime_t*)skb->cb));
+Void DefaultSend(struct GatewayDevice* gd, struct sk_buff* skb) {
+    s64 delta_ns = Now - Atomic64Value((atomic64_t*)skb->cb);
     dev_queue_xmit(skb);
-    AtomicDecrements(&gd->status.response);
     Lock(&gd->lock.this);
-        gd->Default.TXSpeed=delta_ms<125?true:false;
+        gd->Default.TXSpeed = (delta_ns < 125000000ULL);
     Unlock(&gd->lock.this);
+    AtomicDecrements(&gd->status.response);
     DefualtDelaySet(gd);
 }
+
+
 Void DefaultExit(struct NetworkAdapterDevice*nda){
     if(list_empty(&nda->list.GatewayDevices))
         return;
@@ -95,7 +94,7 @@ Void DefaultInit(struct NetworkAdapterDevice*nad){
 
 
 Void DoEthertypeRX(u16*value,struct GatewayDevice* gd, struct NetworkAdapterInterfaceReceiver* nair){
-    Print("DoEthertypeRX");
+ 
              /*     RXMove(2);
 
             printk(KERN_INFO "DoEthertypeRX called\n");  // simple debug
@@ -113,13 +112,22 @@ Void DoEthertypeRX(u16*value,struct GatewayDevice* gd, struct NetworkAdapterInte
 }
 
 Void DoRX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
-   AtomicIncrements(&gd->status.request);
-   RXMove(6);
-   DoEthertypeRX((u16*)(nair->data),gd,nair);
-   Lock(&gd->lock.this);
-        gd->Default.RXSpeed=ktime_to_ms(ktime_sub(ktime_get(),*(ktime_t*)nair->start))<125?true:false;
-   Unlock(&gd->lock.this);
-   RXGatewayCancel;
+
+    AtomicIncrements(&gd->status.request);
+    RXMove(6);
+    s64 delta_ms = ktime_to_ms(ktime_sub(Atomic64Value(&nair->start), Now));
+printk(KERN_INFO "DoEthertypeRX: delta_ms = %lld\n", delta_ms);
+
+  // DoEthertypeRX((u16*)(nair->data),gd,nair);
+   
+    Lock(&gd->lock.this);
+       gd->Default.RXSpeed = (Atomic64Value(&nair->start) - Now < 125000000ULL);
+
+
+    Unlock(&gd->lock.this);
+    AtomicDecrements(&gd->status.request);
+    DefualtDelaySet(gd);
+    Print("DORX");
 }
 static bool DefaultTXSpeed(struct GatewayDevice *gd) {
     bool value;

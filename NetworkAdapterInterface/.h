@@ -13,7 +13,7 @@
         struct NetworkAdapterDevice*NAD;
         struct sk_buff*skb;
         u8*data;
-        ktime_t start;
+        atomic64_t start;
         struct{
             struct list_head tasks,pointers;
         }list;
@@ -29,7 +29,7 @@
             struct list_head this,GatewayDevices;
         }list;
         struct{
-            ktime_t Status;
+            atomic64_t Status;
         }time;
         struct{
             spinlock_t this,GatewayDevices;

@@ -1,8 +1,8 @@
 #ifndef ApplicationProgrammingInterface_H
 #define ApplicationProgrammingInterface_H
     #include "../LauncherInterface/.h"
-    #define Atomic64Header(name) \
-        atomic64_t name
+    #define Atomic64Header(...) \
+        atomic64_t __VA_ARGS__
 
     struct ApplicationProgrammingInterface{
         struct{

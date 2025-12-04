@@ -119,28 +119,28 @@
         GetBootstrapInterface()->
 
     #define Now\
-        ktime_get()
+        ktime_get_ns() 
         
     #define NanosecondsAdd(t,x)\
-        ktime_add_ns((t),(x))
+        (t+x)
 
     #define MicrosecondsAdd(t,x)\
-        ktime_add_us((t),(x))
+        (t+(x*1000ULL))
     
     #define MillisecondsAdd(t,x)\
-        ktime_add_ms((t),(x))
+        (t+(x*1000000ULL))
     
     #define SecondsAdd(t,x)\
-        ktime_add_seconds((t),(x))
+        (t+(x*1000000000ULL))
     
     #define MinutesAdd(t,x)\
-        ktime_add_seconds((t),(x)*60) 
+        (t+(x*60000000000ULL))
     
     #define HoursAdd(t,x)\
-        ktime_add_seconds((t),(x)*3600)
+        (t+(x*3600000000000ULL))
     
     #define DaysAdd(t,x)\
-        ktime_add_seconds((t),(x)*86400) 
+        (t+(x*86400000000000ULL))
 
     #define ListInit(...)\
         {\
@@ -190,8 +190,8 @@
     #define AtomicValue(name)\
         atomic_read(name)
     
-    #define AtomicHeader(name)\
-        atomic_t name    
+    #define AtomicHeader(...)\
+        atomic_t __VA_ARGS__    
         
 
     #define Atomic64Init(...) \
@@ -208,12 +208,14 @@
 
     #define Atomic64Value(name) \
         atomic64_read(name)
-
+    
     #define Atomic64AddMinutes(name,minutes){\
-            ktime_t _a64am_now=ktime_get()+((minutes)*60000000000ULL);\
-            if (_a64am_now>Atomic64Value(name))\
-                 atomic64_add(_a64am_now,name);\
-        }
+        ktime_t _a64am_now=ktime_get()+((minutes)*60000000000ULL);\
+        if(_a64am_now>Atomic64Value(name))\
+            atomic64_set(name,_a64am_now);\
+    }
+
+
     
     #define Atomic64Set(name,value)  atomic64_set(name, atomic64_read(value))
  

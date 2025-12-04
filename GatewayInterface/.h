@@ -16,10 +16,8 @@
             spinlock_t this;
         }lock;
         struct{
-            AtomicHeader(response);
-            AtomicHeader(request);    
-            Atomic64Header(expiry);
-            Atomic64Header(worker);
+            AtomicHeader(response,request);    
+            Atomic64Header(expiry,worker);
         }status;
         struct{           
              struct delayed_work worker; 
@@ -44,8 +42,8 @@
             void(*Exit)(struct NetworkAdapterDevice*);
             void(*Send)(struct GatewayDevice*,struct sk_buff*);   
             void(*Cancel)(struct GatewayDevice*,struct sk_buff*); 
-            void(*TXSpeed)(struct GatewayDevice*);
-            void(*RXSpeed)(struct GatewayDevice*);
+            bool(*TXSpeed)(struct GatewayDevice*);
+            bool(*RXSpeed)(struct GatewayDevice*);
             u8 Broadcast[6];
         }Default;
     };
@@ -69,8 +67,6 @@
     #define RXMove(length) \
         RXData+=length
 
-    #define RXGatewayCancel\
-        Gateway Default.Cancel(gd, NULL)
 
     #define TXGatewayCancel\
         Gateway Default.Cancel(gd, skb)    

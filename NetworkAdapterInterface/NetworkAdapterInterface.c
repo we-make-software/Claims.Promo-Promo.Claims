@@ -1,12 +1,12 @@
 #include "../.h"
 WorkBackgroundTask(NetworkAdapterInterfaceReceiver,worker){
     Lock(&this->NAD->lock.this);
-    if(this->NAD->Status==Overloaded||Now>this->start){
+    if(this->NAD->Status==Overloaded||Now>Atomic64Value(&this->start)){
         Unlock(&this->NAD->lock.this);
         goto Cancel;
     }
     Unlock(&this->NAD->lock.this);
-    this->start=ktime_add_ms(Now,125-(u8)max(ktime_to_ms(ktime_sub(this->start, ktime_get())),0LL));
+    atomic64_set(&this->start, Now + 120000000ULL); 
     this->data+=6;
     RXCall(Gateway)(this);
     Cancel:
@@ -17,7 +17,7 @@ MemoryCacheBody(NetworkAdapterInterfaceReceiver,{
         kfree_skb(this->skb); 
 }){ 
     InitWorkNetworkAdapterInterfaceReceiverworker(this);
-    this->start= ktime_add_ms(Now, 40);
+    atomic64_set(&this->start, MillisecondsAdd(Now, 40));
 }
 MemoryCacheBody(NetworkAdapterDevice,{
     list_del(&this->list.this);
@@ -26,7 +26,7 @@ MemoryCacheBody(NetworkAdapterDevice,{
     list_add(&this->list.this, &NetworkAdapter Default.this);
     LockInit(&this->lock.this,&this->lock.GatewayDevices);
     this->Status=Processed;
-    this->time.Status=Now;
+    atomic64_set(&this->time.Status, Now);
 }
 SKBTX(struct NetworkAdapterDevice*nad){
     if(!nad)return NULL;
@@ -38,8 +38,7 @@ SKBTX(struct NetworkAdapterDevice*nad){
     memcpy(skb_mac_header(skb)+6,nad->packet.dev->dev_addr,6);
     skb->dev=nad->packet.dev;
     skb->ip_summed=CHECKSUM_NONE;
-    ktime_t*ts=(ktime_t*)skb->cb;
-    *ts=ktime_get();
+    atomic64_set((atomic64_t*)skb->cb, Now + 120000000ULL); 
     return skb;
 }
 static int NAIPF(struct sk_buff*skb,struct net_device*,struct packet_type*pt,struct net_device*){
@@ -56,7 +55,7 @@ static int NAIPF(struct sk_buff*skb,struct net_device*,struct packet_type*pt,str
     #endif  
     struct NetworkAdapterDevice*NAD=container_of(pt,struct NetworkAdapterDevice, packet); 
     Lock(&NAD->lock.this);
-    if(NAD->Status==Overloaded&&Now<NAD->time.Status){
+    if(NAD->Status==Overloaded&&Now<Atomic64Value(&NAD->time.Status)){
         Unlock(&NAD->lock.this);
         kfree_skb(skb);
         return NET_RX_DROP;
@@ -68,7 +67,7 @@ static int NAIPF(struct sk_buff*skb,struct net_device*,struct packet_type*pt,str
         Lock(&NAD->lock.this);
         NAD->Status=Overloaded;
         Unlock(&NAD->lock.this);
-        NAD->time.Status=ktime_add(Now,ktime_set(20, 0));
+        atomic64_set(&NAD->time.Status, MillisecondsAdd(Now, 20));
         return NET_RX_DROP;
     }
     Lock(&NAD->lock.this);
