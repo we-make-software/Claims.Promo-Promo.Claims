@@ -94,40 +94,27 @@ Void DefaultInit(struct NetworkAdapterDevice*nad){
 
 
 Void DoEthertypeRX(u16*value,struct GatewayDevice* gd, struct NetworkAdapterInterfaceReceiver* nair){
- 
-             /*     RXMove(2);
-
-            printk(KERN_INFO "DoEthertypeRX called\n");  // simple debug
-
-            if(*value==InternetProtocolVersion6 Default.Type){
-                printk(KERN_INFO "IPv6 branch\n");
-                return;
-            }
-            if(*value==InternetProtocolVersion4 Default.Type){
-                printk(KERN_INFO "IPv4 branch\n");
-                return;
-            }
-
-            printk(KERN_INFO "ARP or other type\n");*/
+    RXMove(2);
+    if(*value==InternetProtocolVersion6 Default.Type){
+    //    printk(KERN_INFO "IPv6 branch\n");
+        return;
+    }
+    if(*value==InternetProtocolVersion4 Default.Type){
+      //  printk(KERN_INFO "IPv4 branch\n");
+        return;
+    }
+    //printk(KERN_INFO "ARP or other type\n");
 }
 
 Void DoRX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
-
     AtomicIncrements(&gd->status.request);
     RXMove(6);
-    s64 delta_ms = ktime_to_ms(ktime_sub(Atomic64Value(&nair->start), Now));
-printk(KERN_INFO "DoEthertypeRX: delta_ms = %lld\n", delta_ms);
-
-  // DoEthertypeRX((u16*)(nair->data),gd,nair);
-   
+    DoEthertypeRX((u16*)(nair->data),gd,nair);
     Lock(&gd->lock.this);
-       gd->Default.RXSpeed = (Atomic64Value(&nair->start) - Now < 125000000ULL);
-
-
+       gd->Default.RXSpeed=(Atomic64Value(&nair->start)-Now<125000000ULL);
     Unlock(&gd->lock.this);
     AtomicDecrements(&gd->status.request);
     DefualtDelaySet(gd);
-    Print("DORX");
 }
 static bool DefaultTXSpeed(struct GatewayDevice *gd) {
     bool value;
