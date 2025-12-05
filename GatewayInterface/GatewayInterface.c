@@ -4,6 +4,11 @@ SKBTX(struct GatewayDevice*GD,u16*type){
         return NULL;
     SKBTXGet(NetworkAdapter,GD->NAD);
     AtomicIncrements(&GD->status.response);
+    if(AtomicIncrements(&GD->status.response)==1&&!Atomic64Value(&GD->status.request)){
+        Lock(&GD->lock.this);
+        CancelDelayedWorkGatewayDeviceworker(GD);
+        Unlock(&GD->lock.this);
+    }
     memcpy(skb_put(skb,12),GD->Address,6);
     *(u16*)skb_put(skb,2)=*type;
     skb->protocol=*type;
@@ -36,14 +41,16 @@ MemoryCacheBody(GatewayDevice,{
 }
 Void DefualtDelaySet(struct GatewayDevice*gd){
     if(!ApplicationProgramming Default.Status)return;
-    Lock(&gd->lock.this);
-        if(Atomic64Value(&gd->status.worker) != Atomic64Value(&gd->status.expiry)){
-            if(Atomic64Value(&gd->status.expiry) == 0)
-                GatewayDeviceExpiry(5);
-            ScheduleDelayedWorkGatewayDeviceworker(gd,(Atomic64Value(&gd->status.expiry)>Now?(Atomic64Value(&gd->status.expiry)-Now):0)/1000000ULL);
-            Atomic64Set(&gd->status.worker,&gd->status.expiry);
-        }
-    Unlock(&gd->lock.this);
+    if(!Atomic64Value(&gd->status.response)&&!Atomic64Value(&gd->status.request)){
+        Lock(&gd->lock.this);
+            if(Atomic64Value(&gd->status.worker) != Atomic64Value(&gd->status.expiry)){
+                if(Atomic64Value(&gd->status.expiry) == 0)
+                    GatewayDeviceExpiry(5);
+                ScheduleDelayedWorkGatewayDeviceworker(gd,(Atomic64Value(&gd->status.expiry)>Now?(Atomic64Value(&gd->status.expiry)-Now):0)/1000000ULL);
+                Atomic64Set(&gd->status.worker,&gd->status.expiry);
+            }
+        Unlock(&gd->lock.this);
+    }
 }
 Void DefaultCancel(struct GatewayDevice*gd,struct sk_buff*skb){
     AtomicDecrements(&gd->status.response);
@@ -102,7 +109,12 @@ Void DoEthertypeRX(u16*value,struct GatewayDevice*gd,struct NetworkAdapterInterf
     RXCall(AddressResolutionProtocol,gd,nair);
 }
 Void DoRX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
-    AtomicIncrements(&gd->status.request);
+    if(AtomicIncrements(&gd->status.request)==1&&!Atomic64Value(&gd->status.response)){
+        Lock(&gd->lock.this);
+        CancelDelayedWorkGatewayDeviceworker(gd);
+        Unlock(&gd->lock.this);
+    }
+    GatewayDeviceExpiry(5);
     RXMove(6);
     DoEthertypeRX((u16*)(nair->data),gd,nair);
     Lock(&gd->lock.this);
@@ -125,60 +137,42 @@ static bool DefaultRXSpeed(struct GatewayDevice *gd) {
     Unlock(&gd->lock.this);
     return value;
 }
-RX(struct NetworkAdapterInterfaceReceiver*nair){
-    if(!list_empty(&nair->NAD->list.GatewayDevices)){
-         struct GatewayDevice*GDHead=list_first_entry(&nair->NAD->list.GatewayDevices,struct GatewayDevice,list.this),
-                            *GDTail=list_last_entry(&nair->NAD->list.GatewayDevices,struct GatewayDevice,list.this);
-        while(true){
-            if(GDHead==GDTail){
-                if(memcmp(nair->data,GDHead->Address,6)==0){
-                    DoRX(GDHead,nair);
-                    return;
-                }
-                break;
-            }
-            if(memcmp(nair->data,GDHead->Address,6)==0){
-                DoRX(GDHead,nair);
-                return;
-            }
-            if(memcmp(nair->data,GDTail->Address,6)==0){
-                DoRX(GDTail,nair);
-                return;
-            }
-            if(GDHead->list.this.next==&GDTail->list.this)break;
-            GDHead=list_entry(GDHead->list.this.next,struct GatewayDevice, list.this);
-            GDTail=list_entry(GDTail->list.this.prev,struct GatewayDevice, list.this);
-        }
-    }
-    Lock(&nair->NAD->lock.GatewayDevices);
+static struct GatewayDevice* DualRX(struct NetworkAdapterInterfaceReceiver*nair) {
     if(!list_empty(&nair->NAD->list.GatewayDevices)){
         struct GatewayDevice*GDHead=list_first_entry(&nair->NAD->list.GatewayDevices,struct GatewayDevice,list.this),
                             *GDTail=list_last_entry(&nair->NAD->list.GatewayDevices,struct GatewayDevice,list.this);
         while(true){
             if(GDHead==GDTail){
-                if(memcmp(nair->data,GDHead->Address,6)==0){
-                    Unlock(&nair->NAD->lock.GatewayDevices);
-                    DoRX(GDHead,nair);
-                    return;
-                }
-                break;
+                if(memcmp(nair->data,GDHead->Address,6)==0)
+                    return GDHead;
+                return NULL;
             }
-            if(memcmp(nair->data,GDHead->Address,6)==0){
-                Unlock(&nair->NAD->lock.GatewayDevices);
-                DoRX(GDHead,nair);
-                return;
-            }
-            if(memcmp(nair->data,GDTail->Address,6)==0){
-                Unlock(&nair->NAD->lock.GatewayDevices);
-                DoRX(GDTail,nair);
-                return;
-            }
-            if(GDHead->list.this.next==&GDTail->list.this)break;
+            if(memcmp(nair->data,GDHead->Address,6)==0)
+                return GDHead;
+            if(memcmp(nair->data,GDTail->Address,6)==0)
+                return GDTail;
+            if(GDHead->list.this.next==&GDTail->list.this)
+                return NULL;
             GDHead=list_entry(GDHead->list.this.next,struct GatewayDevice, list.this);
             GDTail=list_entry(GDTail->list.this.prev,struct GatewayDevice, list.this);
         }
     }
-    struct GatewayDevice*GD=Gateway Memory.GatewayDevice.Create();
+    return NULL;
+}
+RX(struct NetworkAdapterInterfaceReceiver*nair){
+    struct GatewayDevice*GD=DualRX(nair);
+    if(GD){
+        DoRX(GD,nair);
+        return;
+    }
+    Lock(&nair->NAD->lock.GatewayDevices);
+    struct GatewayDevice*GD=DualRX(nair);
+    if(GD){
+        Unlock(&nair->NAD->lock.GatewayDevices);
+        DoRX(GD,nair);
+        return;
+    }
+    GD=Gateway Memory.GatewayDevice.Create();
     if(!GD){
         Unlock(&nair->NAD->lock.GatewayDevices);
         return;

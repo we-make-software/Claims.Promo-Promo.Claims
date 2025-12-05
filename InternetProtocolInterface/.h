@@ -3,7 +3,7 @@
     #include "../GatewayInterface/.h"
 
     struct InternetProtocolFrame{
-        u8 Version:7,Client:1;
+        u8 Version:6,Client:1,Block:1;
         struct{
             struct list_head this,Clients;
         }list;
