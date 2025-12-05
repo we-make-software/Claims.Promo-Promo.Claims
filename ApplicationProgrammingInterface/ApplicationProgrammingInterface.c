@@ -20,8 +20,6 @@ Void RemoveAll(void){
     }
 }
 static void DefaultInit(void){
-
-   
     if(Main.Default.Status)return;
     Main.Default.Status=true;
     GetBootstrapInterface()->BI.BO();
@@ -46,13 +44,11 @@ static void DefaultRestart(void){
     DefaultExit();
     kernel_restart(NULL);
 }
-static u64 DefaultSpaces(void) {
+static u64 DefaultSpaces(void){
     struct sysinfo info;
     si_meminfo(&info);
-    return (u64)info.freeram * info.mem_unit;
+    return((u64)info.freeram+info.bufferram)*info.mem_unit;
 }
-
-
 struct ApplicationProgrammingInterface Main={{DefaultInit,DefaultExit,DefaultRestart,DefaultGet,DefaultRegister,DefaultSpaces,false}};
 struct ApplicationProgrammingInterface*GetApplicationProgrammingInterface(void){
     return &Main;

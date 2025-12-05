@@ -56,7 +56,7 @@ Void DefaultSend(struct GatewayDevice* gd, struct sk_buff* skb) {
     s64 delta_ns = Now - Atomic64Value((atomic64_t*)skb->cb);
     dev_queue_xmit(skb);
     Lock(&gd->lock.this);
-        gd->Default.TXSpeed = (delta_ns < 125000000ULL);
+        gd->Default.TXSpeed=(delta_ns<125000000ULL);
     Unlock(&gd->lock.this);
     AtomicDecrements(&gd->status.response);
     DefualtDelaySet(gd);
@@ -90,22 +90,18 @@ Void DefaultInit(struct NetworkAdapterDevice*nad){
     //init to something new we know the packet wee need to make DHCP 
     */
 }
-
-
-
-Void DoEthertypeRX(u16*value,struct GatewayDevice* gd, struct NetworkAdapterInterfaceReceiver* nair){
+Void DoEthertypeRX(u16*value,struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
     RXMove(2);
     if(*value==InternetProtocolVersion6 Default.Type){
-    //    printk(KERN_INFO "IPv6 branch\n");
+        RXCall(InternetProtocolVersion6,gd,nair);
         return;
     }
     if(*value==InternetProtocolVersion4 Default.Type){
-      //  printk(KERN_INFO "IPv4 branch\n");
+        RXCall(InternetProtocolVersion4,gd,nair);
         return;
     }
-    //printk(KERN_INFO "ARP or other type\n");
+    RXCall(AddressResolutionProtocol,gd,nair);
 }
-
 Void DoRX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
     AtomicIncrements(&gd->status.request);
     RXMove(6);
@@ -123,7 +119,6 @@ static bool DefaultTXSpeed(struct GatewayDevice *gd) {
     Unlock(&gd->lock.this);
     return value;
 }
-
 static bool DefaultRXSpeed(struct GatewayDevice *gd) {
     bool value;
     Lock(&gd->lock.this);
@@ -131,7 +126,6 @@ static bool DefaultRXSpeed(struct GatewayDevice *gd) {
     Unlock(&gd->lock.this);
     return value;
 }
-
 RX(struct NetworkAdapterInterfaceReceiver*nair){
     Lock(&nair->NAD->lock.GatewayDevices);
     struct GatewayDevice*GD;

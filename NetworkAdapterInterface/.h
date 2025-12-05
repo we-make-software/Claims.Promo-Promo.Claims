@@ -46,7 +46,6 @@
             MemoryCacheHeaderFunction(NetworkAdapterDevice)NAD;
         }Memory;
         struct{
-            ktime_t Speed;
             struct list_head this;
         }Default;
     };
@@ -59,7 +58,7 @@
 
 
     #define SKBTX(...)\
-        Struct sk_buff*DefaultTXCreate(__VA_ARGS__)
+        Struct sk_buff*DTXC(__VA_ARGS__)
 
     #define SKBTXGet(name,...)\
         struct sk_buff*skb=name TXLH.C(__VA_ARGS__);\

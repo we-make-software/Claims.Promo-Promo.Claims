@@ -4,7 +4,7 @@
     
     LibraryHeader(AddressResolutionProtocolInterface){
         BootstrapLibraryHeader;
-        RXLibraryHeader(struct GatewayDevice*);
+        RXLibraryHeader(struct GatewayDevice*,struct NetworkAdapterInterfaceReceiver*);
         struct{
             u16 Type;
         }Default;

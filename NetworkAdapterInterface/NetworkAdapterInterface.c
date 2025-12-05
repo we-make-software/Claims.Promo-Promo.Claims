@@ -8,7 +8,7 @@ WorkBackgroundTask(NetworkAdapterInterfaceReceiver,worker){
     Unlock(&this->NAD->lock.this);
     atomic64_set(&this->start, Now + 120000000ULL); 
     this->data+=6;
-    RXCall(Gateway)(this);
+    RXCall(Gateway,this);
     Cancel:
     NetworkAdapter Memory.NAIR.Free(this);
 }
@@ -124,5 +124,4 @@ BootstrapBody({
 LibraryBody(NetworkAdapterInterface,
     BootstrapLibraryBody,
     SKBTXLibraryBody,
-    {MemoryCacheBodyFunction(NetworkAdapterInterfaceReceiver),MemoryCacheBodyFunction(NetworkAdapterDevice)},
-    {0})
+    {MemoryCacheBodyFunction(NetworkAdapterInterfaceReceiver),MemoryCacheBodyFunction(NetworkAdapterDevice)})

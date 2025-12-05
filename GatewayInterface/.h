@@ -52,10 +52,8 @@
         if(gd->NAD->Status==Overloaded||Now>nair->start||gd->Default.block)__VA_ARGS__\
         else
 
-
-
     #define SKBTXLibraryBody\
-        {DefaultTXCreate}    
+        {DTXC}    
 
     #define Gateway\
         GetGatewayInterface()->
@@ -81,8 +79,8 @@
     #define RXGatewayGetSpeed\
         Gateway Default.RXSpeed(gd)    
     
-    #define RXCall(name)\
-        name NALH.RW
+    #define RXCall(name, ...)\
+        name NALH.RW(__VA_ARGS__)
         
     #define RX(...)\
         Void RC(__VA_ARGS__)

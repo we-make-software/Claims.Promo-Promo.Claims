@@ -209,19 +209,17 @@
     #define Atomic64Value(name) \
         atomic64_read(name)
     
-    #define Atomic64AddMinutes(name,minutes){\
-        ktime_t _a64am_now=ktime_get()+((minutes)*60000000000ULL);\
-        if(_a64am_now>Atomic64Value(name))\
-            atomic64_set(name,_a64am_now);\
+    #define Atomic64AddMinutes(name, minutes) { \
+        u64 _a64am_now = Now + ((minutes) * 60000000000ULL); \
+        if (_a64am_now > Atomic64Value(name)) \
+            atomic64_set(name, _a64am_now); \
     }
 
-
-    
     #define Atomic64Set(name,value)  atomic64_set(name, atomic64_read(value))
  
 
     #define Atomic64SetNow(name) \
-        atomic64_set(&(name), ktime_to_ns(ktime_get()))
+        atomic64_set(name,Now)
 
 
     #define WorkBackgroundTask(name, property)\

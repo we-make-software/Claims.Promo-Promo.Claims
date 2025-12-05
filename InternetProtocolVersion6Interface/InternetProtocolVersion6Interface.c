@@ -1,6 +1,6 @@
 #include "../.h"
-RX(struct GatewayDevice*GD){
-
+RX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
+    Print("InternetProtocolVersion6");
 }
 BootstrapBody({
 }){
