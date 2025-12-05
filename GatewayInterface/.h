@@ -91,7 +91,7 @@
     #define RXTestTime\
     {\
         s64 __delta_ms = ktime_to_ms(ktime_sub(Atomic64Value(&nair->start), Now));\
-        (KERN_INFO "RXSped: delta_ms = %lld\n", __delta_ms);\
+        printk(KERN_INFO "RXSped: delta_ms = %lld\n", __delta_ms);\
     }
 
 #endif

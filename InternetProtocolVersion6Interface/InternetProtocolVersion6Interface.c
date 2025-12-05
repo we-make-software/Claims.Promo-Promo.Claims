@@ -5,11 +5,15 @@ MemoryCacheBody(InternetProtocolVersion6Frame,{
 }){
 
 }
-struct InternetProtocolVersion6Frame*Client(struct GatewayDevice*gd,u8*address){}
-struct InternetProtocolVersion6Frame*Server(struct GatewayDevice*gd,u8*address){}
+Static struct InternetProtocolVersion6Frame*Client(struct GatewayDevice*gd,u8*address){
+    return NULL;
+}
+Static struct InternetProtocolVersion6Frame*Server(struct GatewayDevice*gd,u8*address){
+    return NULL;
+}
 
 RX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
-    Print("InternetProtocolVersion6");
+   // Print("InternetProtocolVersion6");
 }
 BootstrapBody({
     InternetProtocolVersion6 Memory.I.Init();

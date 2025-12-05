@@ -15,7 +15,7 @@
 
     LibraryHeader(InternetProtocolInterface){
         struct{
-            void(*Exit)(struct GatewayDevice*gd)
+            void(*Exit)(struct GatewayDevice*gd);
         }Default;
     };
 

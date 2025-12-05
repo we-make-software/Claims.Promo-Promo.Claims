@@ -126,16 +126,59 @@ static bool DefaultRXSpeed(struct GatewayDevice *gd) {
     return value;
 }
 RX(struct NetworkAdapterInterfaceReceiver*nair){
-    Lock(&nair->NAD->lock.GatewayDevices);
-    struct GatewayDevice*GD;
-    list_for_each_entry(GD,&nair->NAD->list.GatewayDevices, list.this) {
-        if(memcmp(nair->data,GD->Address,6)==0&&cancel_delayed_work_sync(&GD->BackgroundTask.worker)){
-            Unlock(&nair->NAD->lock.GatewayDevices);
-            DoRX(GD,nair);
-            return;
+    if(!list_empty(&nair->NAD->list.GatewayDevices)){
+         struct GatewayDevice*GDHead=list_first_entry(&nair->NAD->list.GatewayDevices,struct GatewayDevice,list.this),
+                            *GDTail=list_last_entry(&nair->NAD->list.GatewayDevices,struct GatewayDevice,list.this);
+        while(true){
+            if(GDHead==GDTail){
+                if(memcmp(nair->data,GDHead->Address,6)==0){
+                    DoRX(GDHead,nair);
+                    return;
+                }
+                break;
+            }
+            if(memcmp(nair->data,GDHead->Address,6)==0){
+                DoRX(GDHead,nair);
+                return;
+            }
+            if(memcmp(nair->data,GDTail->Address,6)==0){
+                DoRX(GDTail,nair);
+                return;
+            }
+            if(GDHead->list.this.next==&GDTail->list.this)break;
+            GDHead=list_entry(GDHead->list.this.next,struct GatewayDevice, list.this);
+            GDTail=list_entry(GDTail->list.this.prev,struct GatewayDevice, list.this);
         }
     }
-    GD=Gateway Memory.GatewayDevice.Create();
+    Lock(&nair->NAD->lock.GatewayDevices);
+    if(!list_empty(&nair->NAD->list.GatewayDevices)){
+        struct GatewayDevice*GDHead=list_first_entry(&nair->NAD->list.GatewayDevices,struct GatewayDevice,list.this),
+                            *GDTail=list_last_entry(&nair->NAD->list.GatewayDevices,struct GatewayDevice,list.this);
+        while(true){
+            if(GDHead==GDTail){
+                if(memcmp(nair->data,GDHead->Address,6)==0){
+                    Unlock(&nair->NAD->lock.GatewayDevices);
+                    DoRX(GDHead,nair);
+                    return;
+                }
+                break;
+            }
+            if(memcmp(nair->data,GDHead->Address,6)==0){
+                Unlock(&nair->NAD->lock.GatewayDevices);
+                DoRX(GDHead,nair);
+                return;
+            }
+            if(memcmp(nair->data,GDTail->Address,6)==0){
+                Unlock(&nair->NAD->lock.GatewayDevices);
+                DoRX(GDTail,nair);
+                return;
+            }
+            if(GDHead->list.this.next==&GDTail->list.this)break;
+            GDHead=list_entry(GDHead->list.this.next,struct GatewayDevice, list.this);
+            GDTail=list_entry(GDTail->list.this.prev,struct GatewayDevice, list.this);
+        }
+    }
+    struct GatewayDevice*GD=Gateway Memory.GatewayDevice.Create();
     if(!GD){
         Unlock(&nair->NAD->lock.GatewayDevices);
         return;

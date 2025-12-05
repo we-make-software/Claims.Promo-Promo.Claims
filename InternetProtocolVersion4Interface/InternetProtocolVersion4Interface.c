@@ -1,8 +1,13 @@
 #include "../.h"
 MemoryCacheBody(InternetProtocolVersion4Frame,{}){}
-struct InternetProtocolVersion4Frame*Client(struct GatewayDevice*gd,u8*address){}
-struct InternetProtocolVersion4Frame*Server(struct GatewayDevice*gd,u8*address){}
+Static struct InternetProtocolVersion4Frame*Client(struct GatewayDevice*gd,u8*address){
+    return NULL;
+}
+Static struct InternetProtocolVersion4Frame*Server(struct GatewayDevice*gd,u8*address){
+    return NULL;
+}
 RX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
+   RXTestTime;
     Print("InternetProtocolVersion4");
 }
 BootstrapBody({

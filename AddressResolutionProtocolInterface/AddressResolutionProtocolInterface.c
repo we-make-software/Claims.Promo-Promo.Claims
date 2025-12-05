@@ -1,6 +1,6 @@
 #include "../.h"
 RX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
-    Print("AddressResolutionProtocol");
+    //Print("AddressResolutionProtocol");
 }
 BootstrapBody({
 }){
