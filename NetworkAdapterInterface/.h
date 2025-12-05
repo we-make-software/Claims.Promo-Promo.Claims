@@ -50,12 +50,9 @@
         }Default;
     };
 
-   
-
  
     #define RXLibraryBody\
             {RC}
-
 
     #define SKBTX(...)\
         Struct sk_buff*DTXC(__VA_ARGS__)

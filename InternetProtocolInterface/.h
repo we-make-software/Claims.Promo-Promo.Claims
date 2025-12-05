@@ -31,6 +31,15 @@
         }Default;
     };
 
+     #define InternetProtocolFrameExpiry(m)\
+        {\
+            Atomic64AddMinutes(&ipf->status.expiry,m);\
+            if(ipf->Client)\
+                Atomic64AddMinutes(&ipf->link.Server->status.expiry,m);\
+            struct GatewayDevice*gd=ipf->Client?ipf->link.Server->link.Router:ipf->link.Router;\
+            GatewayDeviceExpiry(m);\
+        }
+
     #define InternetProtocol\
         GetInternetProtocolInterface()->
 

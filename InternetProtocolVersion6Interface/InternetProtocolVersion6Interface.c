@@ -93,7 +93,7 @@ Static struct InternetProtocolFrame*Server(struct GatewayDevice*gd,u8*address){
     return &ipv6f->IPF;
 }
 RX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
-    struct InternetProtocolFrame*server=Server(gd,nair->data+24);
+     struct InternetProtocolFrame*server=Server(gd,nair->data+24);
     if(!server)
         return;
     struct InternetProtocolFrame*client=Client(server,nair->data+8);
@@ -105,11 +105,12 @@ RX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
     u8*nextHeader=nair->data+6;
     RXMove(40);
     RXCall(InternetProtocol,nextHeader,client,nair);
+    
 }
 BootstrapBody({
-    InternetProtocolVersion6 Memory.I.Init();
+    InternetProtocolVersion6 Memory.I.Exit();  
 }){
-    InternetProtocolVersion6 Memory.I.Exit();
+    InternetProtocolVersion6 Memory.I.Init();
 }
 LibraryBody(InternetProtocolVersion6Interface,
     BootstrapLibraryBody,

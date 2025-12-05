@@ -1,21 +1,21 @@
 #include "../.h"
 #ifdef MODULE
-    static void __exit _LauncherInterface_Exit(void){
+    static void __exit DefaultLauncherInterfaceExit(void){
         ApplicationProgramming 
             Default.Exit();
     }
-    module_exit(_LauncherInterface_Exit);
+    module_exit(DefaultLauncherInterfaceExit);
 #else
-    static int _LauncherInterface_Exit(struct notifier_block*,unsigned long, void*){
+    static int DefaultLauncherInterfaceExit(struct notifier_block*,unsigned long, void*){
         ApplicationProgramming 
             Exit();
         return NOTIFY_OK;
     }
-    static struct notifier_block _LauncherInterface_Notifier= {.notifier_call = _LauncherInterface_Exit};
+    static struct notifier_block LN= {.notifier_call = DefaultLauncherInterfaceExit};
 #endif
 LauncherInterface_Setup(Launcher){
     #ifndef MODULE
-        register_reboot_notifier(&_LauncherInterface_Notifier);
+        register_reboot_notifier(&LN);
     #endif
     ApplicationProgramming 
         Default.Init();

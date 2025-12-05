@@ -103,9 +103,9 @@ RX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
     RXCall(InternetProtocol,nextHeader,client,nair);
 }
 BootstrapBody({
-    InternetProtocolVersion4 Memory.I.Init();
+    InternetProtocolVersion4 Memory.I.Exit(); 
 }){
-    InternetProtocolVersion4 Memory.I.Exit();
+    InternetProtocolVersion4 Memory.I.Init();
 }
 LibraryBody(InternetProtocolVersion4Interface,
     BootstrapLibraryBody,

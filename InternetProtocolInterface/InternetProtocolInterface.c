@@ -1,21 +1,17 @@
 #include "../.h"
-void DefaultAutoChoiceExit(struct InternetProtocolFrame*ipf){
-    spinlock_t*lock=ipf->Client?&ipf->link.Server->lock.this:&ipf->link.Router->lock.Servers;
-    Lock(lock);
+Void DefaultAutoChoiceExit(struct InternetProtocolFrame*ipf){
     switch(ipf->Version)
     {
         case 4:
-            Unlock(&lock);
-                InternetProtocolVersion4 Memory.I.Free((struct InternetProtocolVersion4Frame*)ipf);
-            Lock(&lock);
+            InternetProtocolVersion4 Memory.I.Free((struct InternetProtocolVersion4Frame*)ipf);
         break;
         case 6:
-            Unlock(&lock);
-                InternetProtocolVersion6 Memory.I.Free((struct InternetProtocolVersion6Frame*)ipf);
-            Lock(&lock);
+            InternetProtocolVersion6 Memory.I.Free((struct InternetProtocolVersion6Frame*)ipf);
         break;
     }
-    Unlock(&lock);
+}
+DelayedBackgroundTask(InternetProtocolFrame,worker){
+    DefaultAutoChoiceExit(this);
 }
 Void DefaultExit(struct GatewayDevice*gd){
     struct InternetProtocolFrame *entry, *tmp;
@@ -36,21 +32,19 @@ Void DefaultDelete(struct InternetProtocolFrame*ipf){
     }
 }
 Void DefaultDelaySet(struct InternetProtocolFrame*ipf){
-    if(!AtomicIncrements(&ipf->status.request)&&!Atomic64Value(&ipf->status.response)){
+    if(!AtomicIncrements(&ipf->status.request)&&!AtomicValue(&ipf->status.response)){
         spinlock_t*lock=ipf->Client?&ipf->link.Server->lock.this:&ipf->link.Router->lock.Servers;
         Lock(lock);
-        if(!Atomic64Value(&ipf->status.worker)!=Atomic64Value(&ipf->status.expiry)){
-          // if(Atomic64Value(&ipf->status.expiry)==0)
-            //    InternetProtocolFrameExpiry(5);
+        if(Atomic64Value(&ipf->status.worker)!=Atomic64Value(&ipf->status.expiry)){
+            if(Atomic64Value(&ipf->status.expiry)==0)
+                InternetProtocolFrameExpiry(5);
             ScheduleDelayedWorkInternetProtocolFrameworker(ipf,(Atomic64Value(&ipf->status.expiry)>Now?(Atomic64Value(&ipf->status.expiry)-Now):0)/1000000ULL);
             Atomic64Set(&ipf->status.worker,&ipf->status.expiry);
         }
         Unlock(lock);
     }
 }
-DelayedBackgroundTask(InternetProtocolFrame,worker){
-    DefaultAutoChoiceExit(this);
-}
+
 Void DefaultInit(struct InternetProtocolFrame*ipf){
     ipf->Block=false;
     ipf->Client=false;
@@ -62,12 +56,14 @@ Void DefaultInit(struct InternetProtocolFrame*ipf){
     InitDelayedWorkInternetProtocolFrameworker(ipf);
 }
 RX(u8*nextHeader,struct InternetProtocolFrame*ipf,struct NetworkAdapterInterfaceReceiver*nair){
-    if(AtomicIncrements(&ipf->link.Server->status.request)==1&&!Atomic64Value(&ipf->link.Server->status.response)){
+    Print("RX IP");
+    /*
+    if(AtomicIncrements(&ipf->link.Server->status.request)==1&&!AtomicValue(&ipf->link.Server->status.response)){
         Lock(&ipf->link.Server->lock.this);
         CancelDelayedWorkInternetProtocolFrameworker(ipf->link.Server);
         Unlock(&ipf->link.Server->lock.this);
     }
-    if(AtomicIncrements(&ipf->status.request)==1&&!Atomic64Value(&ipf->status.response)){
+    if(AtomicIncrements(&ipf->status.request)==1&&!AtomicValue(&ipf->status.response)){
         Lock(&ipf->lock.this);
         CancelDelayedWorkInternetProtocolFrameworker(ipf);
         Unlock(&ipf->lock.this);
@@ -78,5 +74,6 @@ RX(u8*nextHeader,struct InternetProtocolFrame*ipf,struct NetworkAdapterInterface
     AtomicDecrements(&ipf->link.Server->status.request);
     DefaultDelaySet(ipf);
     DefaultDelaySet(ipf->link.Server);
+    */
 }
 LibraryBody(InternetProtocolInterface,RXLibraryBody,{DefaultDelete,DefaultExit,DefaultInit})

@@ -1,10 +1,17 @@
 #include "../.h"
+
+DelayedBackgroundTask(GatewayDevice,worker){
+    Lock(&this->lock.this);
+    this->Default.block=true;
+    Unlock(&this->lock.this);
+    Gateway Memory.GatewayDevice.Free(this);
+}
 SKBTX(struct GatewayDevice*GD,u16*type){
     if(!GD||GD->Default.block||!HasEnoughSpaceBytes(sizeof(struct sk_buff)+1514))
         return NULL;
     SKBTXGet(NetworkAdapter,GD->NAD);
     AtomicIncrements(&GD->status.response);
-    if(AtomicIncrements(&GD->status.response)==1&&!Atomic64Value(&GD->status.request)){
+    if(AtomicIncrements(&GD->status.response)==1&&!AtomicValue(&GD->status.request)){
         Lock(&GD->lock.this);
         CancelDelayedWorkGatewayDeviceworker(GD);
         Unlock(&GD->lock.this);
@@ -14,12 +21,6 @@ SKBTX(struct GatewayDevice*GD,u16*type){
     skb->protocol=*type;
     skb->network_header=skb->tail;
     SKBTXReturn;
-}
-DelayedBackgroundTask(GatewayDevice,worker){
-    Lock(&this->lock.this);
-    this->Default.block=true;
-    Unlock(&this->lock.this);
-    Gateway Memory.GatewayDevice.Free(this);
 }
 MemoryCacheBody(GatewayDevice,{
     Lock(&this->NAD->lock.GatewayDevices);
@@ -41,9 +42,9 @@ MemoryCacheBody(GatewayDevice,{
 }
 Void DefaultDelaySet(struct GatewayDevice*gd){
     if(!ApplicationProgramming Default.Status)return;
-    if(!Atomic64Value(&gd->status.response)&&!Atomic64Value(&gd->status.request)){
+    if(!AtomicValue(&gd->status.response)&&!AtomicValue(&gd->status.request)){
         Lock(&gd->lock.this);
-            if(Atomic64Value(&gd->status.worker) != Atomic64Value(&gd->status.expiry)){
+            if(Atomic64Value(&gd->status.worker)!=Atomic64Value(&gd->status.expiry)){
                 if(Atomic64Value(&gd->status.expiry) == 0)
                     GatewayDeviceExpiry(5);
                 ScheduleDelayedWorkGatewayDeviceworker(gd,(Atomic64Value(&gd->status.expiry)>Now?(Atomic64Value(&gd->status.expiry)-Now):0)/1000000ULL);
@@ -57,7 +58,6 @@ Void DefaultCancel(struct GatewayDevice*gd,struct sk_buff*skb){
     kfree_skb(skb);
     DefaultDelaySet(gd);
 }
-
 Void DefaultSend(struct GatewayDevice* gd, struct sk_buff* skb) {
     s64 delta_ns = Now - Atomic64Value((atomic64_t*)skb->cb);
     dev_queue_xmit(skb);
@@ -67,8 +67,6 @@ Void DefaultSend(struct GatewayDevice* gd, struct sk_buff* skb) {
     AtomicDecrements(&gd->status.response);
     DefaultDelaySet(gd);
 }
-
-
 Void DefaultExit(struct NetworkAdapterDevice*nda){
     if(list_empty(&nda->list.GatewayDevices))
         return;
@@ -76,8 +74,6 @@ Void DefaultExit(struct NetworkAdapterDevice*nda){
     list_for_each_entry_safe(GD,tmp,&nda->list.GatewayDevices,list.this)
       Gateway Memory.GatewayDevice.Free(GD);
 }
-
-
 Void DefaultInit(struct NetworkAdapterDevice*nad){
 
        /*
@@ -109,7 +105,7 @@ Void DoEthertypeRX(u16*value,struct GatewayDevice*gd,struct NetworkAdapterInterf
     RXCall(AddressResolutionProtocol,gd,nair);
 }
 Void DoRX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
-    if(AtomicIncrements(&gd->status.request)==1&&!Atomic64Value(&gd->status.response)){
+    if(AtomicIncrements(&gd->status.request)==1&&!AtomicValue(&gd->status.response)){
         Lock(&gd->lock.this);
         CancelDelayedWorkGatewayDeviceworker(gd);
         Unlock(&gd->lock.this);
@@ -163,7 +159,7 @@ RX(struct NetworkAdapterInterfaceReceiver*nair){
         return;
     }
     Lock(&nair->NAD->lock.GatewayDevices);
-    struct GatewayDevice*GD=DualRX(nair);
+    GD=DualRX(nair);
     if(GD){
         Unlock(&nair->NAD->lock.GatewayDevices);
         DoRX(GD,nair);
