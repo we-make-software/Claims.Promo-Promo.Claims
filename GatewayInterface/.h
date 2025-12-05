@@ -44,6 +44,7 @@
             void(*Cancel)(struct GatewayDevice*,struct sk_buff*); 
             bool(*TXSpeed)(struct GatewayDevice*);
             bool(*RXSpeed)(struct GatewayDevice*);
+            void(*RXError)(struct GatewayDevice*gd);
             u8 Broadcast[6];
         }Default;
     };

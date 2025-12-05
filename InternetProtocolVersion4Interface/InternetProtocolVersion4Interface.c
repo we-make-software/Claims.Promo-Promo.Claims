@@ -90,12 +90,15 @@ Static struct InternetProtocolFrame*Server(struct GatewayDevice*gd,u8*address){
 }
 RX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
     struct InternetProtocolFrame*server=Server(gd,nair->data+16);
-    if(!server)
+    if(!server){
+        Gateway Default.RXError(gd);
         return;
+    }
     struct InternetProtocolFrame*client=Client(server,nair->data+12);
     if(!client){
         if(!AtomicValue(&server->status.request)&&!AtomicValue(&server->status.response))
             InternetProtocolVersion4 Memory.I.Free((struct InternetProtocolVersion4Frame*)server);
+        Gateway Default.RXError(gd);    
         return;
     }
     u8*nextHeader=nair->data+9;

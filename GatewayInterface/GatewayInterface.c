@@ -59,13 +59,21 @@ Void DefaultCancel(struct GatewayDevice*gd,struct sk_buff*skb){
     DefaultDelaySet(gd);
 }
 Void DefaultSend(struct GatewayDevice* gd, struct sk_buff* skb) {
-    s64 delta_ns = Now - Atomic64Value((atomic64_t*)skb->cb);
+    s64 delta_ns = (Now > Atomic64Value((atomic64_t*)skb->cb)) 
+                   ? (Now - Atomic64Value((atomic64_t*)skb->cb)) 
+                   : (Atomic64Value((atomic64_t*)skb->cb) - Now);
+
     dev_queue_xmit(skb);
     Lock(&gd->lock.this);
-        gd->Default.TXSpeed=(delta_ns<125000000ULL);
+        gd->Default.TXSpeed = (delta_ns < 125000000ULL); // 125 ms in ns
     Unlock(&gd->lock.this);
     AtomicDecrements(&gd->status.response);
     DefaultDelaySet(gd);
+}
+Void DefaultRXError(struct GatewayDevice*gd){
+    Lock(&gd->lock.this);
+       gd->Default.RXSpeed=false;
+    Unlock(&gd->lock.this);
 }
 Void DefaultExit(struct NetworkAdapterDevice*nda){
     if(list_empty(&nda->list.GatewayDevices))
@@ -114,7 +122,10 @@ Void DoRX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
     RXMove(6);
     DoEthertypeRX((u16*)(nair->data),gd,nair);
     Lock(&gd->lock.this);
-       gd->Default.RXSpeed=(Atomic64Value(&nair->start)-Now<125000000ULL);
+       gd->Default.RXSpeed=((s64)((Atomic64Value(&nair->start) > Now) ? 
+                             (Atomic64Value(&nair->start) - Now) : 
+                             (Now-Atomic64Value(&nair->start))) < 125000000ULL);
+
     Unlock(&gd->lock.this);
     AtomicDecrements(&gd->status.request);
     DefaultDelaySet(gd);
@@ -186,5 +197,5 @@ LibraryBody(GatewayInterface,
     RXLibraryBody,
     SKBTXLibraryBody,
     {MemoryCacheBodyFunction(GatewayDevice)},
-    {DefaultInit,DefaultExit,DefaultSend,DefaultCancel,DefaultTXSpeed,DefaultRXSpeed,{255,255,255,255,255,255}}
+    {DefaultInit,DefaultExit,DefaultSend,DefaultCancel,DefaultTXSpeed,DefaultRXSpeed,DefaultRXError,{255,255,255,255,255,255}}
 )

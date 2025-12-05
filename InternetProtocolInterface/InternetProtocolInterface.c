@@ -56,8 +56,7 @@ Void DefaultInit(struct InternetProtocolFrame*ipf){
     InitDelayedWorkInternetProtocolFrameworker(ipf);
 }
 RX(u8*nextHeader,struct InternetProtocolFrame*ipf,struct NetworkAdapterInterfaceReceiver*nair){
-    Print("RX IP");
-    /*
+
     if(AtomicIncrements(&ipf->link.Server->status.request)==1&&!AtomicValue(&ipf->link.Server->status.response)){
         Lock(&ipf->link.Server->lock.this);
         CancelDelayedWorkInternetProtocolFrameworker(ipf->link.Server);
@@ -74,6 +73,6 @@ RX(u8*nextHeader,struct InternetProtocolFrame*ipf,struct NetworkAdapterInterface
     AtomicDecrements(&ipf->link.Server->status.request);
     DefaultDelaySet(ipf);
     DefaultDelaySet(ipf->link.Server);
-    */
+
 }
 LibraryBody(InternetProtocolInterface,RXLibraryBody,{DefaultDelete,DefaultExit,DefaultInit})
