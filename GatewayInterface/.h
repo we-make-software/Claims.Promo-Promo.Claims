@@ -10,10 +10,10 @@
         struct NetworkAdapterDevice*NAD;
         u8 Address[6];
         struct{
-            struct list_head this;
+            struct list_head this,Servers;
         }list;
         struct{
-            spinlock_t this;
+            spinlock_t this,Servers;
         }lock;
         struct{
             AtomicHeader(response,request);    
@@ -49,7 +49,7 @@
     };
     
     #define GatewayOverFlowControl(...)\
-        if(gd->NAD->Status==Overloaded||Now>nair->start||gd->Default.block)__VA_ARGS__\
+        if(gd->NAD->Status==Overloaded||Now>Atomic64Value(nair->start)||gd->Default.block)__VA_ARGS__\
         else
 
     #define SKBTXLibraryBody\
@@ -91,7 +91,7 @@
     #define RXTestTime\
     {\
         s64 __delta_ms = ktime_to_ms(ktime_sub(Atomic64Value(&nair->start), Now));\
-        (KERN_INFO "DoEthertypeRX: delta_ms = %lld\n", __delta_ms);\
+        (KERN_INFO "RXSped: delta_ms = %lld\n", __delta_ms);\
     }
 
 #endif

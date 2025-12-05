@@ -23,14 +23,13 @@ MemoryCacheBody(GatewayDevice,{
     Lock(&this->lock.this);
     CancelDelayedWorkGatewayDeviceworker(this);
     Unlock(&this->lock.this);
-    //send it to project that needs to know about it
-
+    InternetProtocol Default.Exit(this);
 }){ 
     InitDelayedWorkGatewayDeviceworker(this);
-    ListInit(&this->list.this);
+    ListInit(&this->list.this,&this->list.Servers);
     AtomicInit(&this->status.request,&this->status.response);
     Atomic64Init(&this->status.expiry,&this->status.worker);
-    LockInit(&this->lock.this);
+    LockInit(&this->lock.this,&this->lock.Servers);
     this->Default.block=false;
     this->Default.RXSpeed=true;
     this->Default.TXSpeed=true;
