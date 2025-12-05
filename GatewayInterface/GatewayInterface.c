@@ -123,38 +123,35 @@ Void DoRX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
     AtomicDecrements(&gd->status.request);
     DefualtDelaySet(gd);
 }
-static bool DefaultTXSpeed(struct GatewayDevice *gd) {
+static bool DefaultTXSpeed(struct GatewayDevice*gd) {
     bool value;
     Lock(&gd->lock.this);
     value=gd->Default.TXSpeed;
     Unlock(&gd->lock.this);
     return value;
 }
-static bool DefaultRXSpeed(struct GatewayDevice *gd) {
+static bool DefaultRXSpeed(struct GatewayDevice*gd) {
     bool value;
     Lock(&gd->lock.this);
     value=gd->Default.RXSpeed;
     Unlock(&gd->lock.this);
     return value;
 }
-static struct GatewayDevice* DualRX(struct NetworkAdapterInterfaceReceiver*nair) {
+static struct GatewayDevice*DualRX(struct NetworkAdapterInterfaceReceiver*nair) {
     if(!list_empty(&nair->NAD->list.GatewayDevices)){
-        struct GatewayDevice*GDHead=list_first_entry(&nair->NAD->list.GatewayDevices,struct GatewayDevice,list.this),
-                            *GDTail=list_last_entry(&nair->NAD->list.GatewayDevices,struct GatewayDevice,list.this);
+        struct GatewayDevice*Head=list_first_entry(&nair->NAD->list.GatewayDevices,struct GatewayDevice,list.this),
+                            *Tail=list_last_entry(&nair->NAD->list.GatewayDevices,struct GatewayDevice,list.this);
         while(true){
-            if(GDHead==GDTail){
-                if(memcmp(nair->data,GDHead->Address,6)==0)
-                    return GDHead;
+            if(Head==Tail)
+                return memcmp(nair->data,Head->Address,6)==0?Head:NULL;
+            if(memcmp(nair->data,Head->Address,6)==0)
+                return Head;
+            if(memcmp(nair->data,Tail->Address,6)==0)
+                return Tail;
+            if(Head->list.this.next==&Tail->list.this)
                 return NULL;
-            }
-            if(memcmp(nair->data,GDHead->Address,6)==0)
-                return GDHead;
-            if(memcmp(nair->data,GDTail->Address,6)==0)
-                return GDTail;
-            if(GDHead->list.this.next==&GDTail->list.this)
-                return NULL;
-            GDHead=list_entry(GDHead->list.this.next,struct GatewayDevice, list.this);
-            GDTail=list_entry(GDTail->list.this.prev,struct GatewayDevice, list.this);
+            Head=list_entry(Head->list.this.next,struct GatewayDevice, list.this);
+            Tail=list_entry(Tail->list.this.prev,struct GatewayDevice, list.this);
         }
     }
     return NULL;

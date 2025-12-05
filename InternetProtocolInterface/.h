@@ -3,22 +3,32 @@
     #include "../GatewayInterface/.h"
 
     struct InternetProtocolFrame{
-        u8 Version:6,Client:1,Block:1;
+        u8 Version:5,Client:1,Verified:1,Block:1;
         struct{
             struct list_head this,Clients;
         }list;
+        struct{
+            spinlock_t this;
+        }lock;
+        struct{
+            AtomicHeader(response,request);    
+        }status;
         union{
-            struct InternetProtocol*Server;
+            struct InternetProtocolFrame*Server;
             struct GatewayDevice*Router;
         }link;
     };
 
     LibraryHeader(InternetProtocolInterface){
+        RXLibraryHeader(u8*,struct InternetProtocolFrame*,struct NetworkAdapterInterfaceReceiver*);
         struct{
-            void(*Exit)(struct GatewayDevice*gd);
+            void(*Delete)(struct InternetProtocolFrame*);
+            void(*Exit)(struct GatewayDevice*);
+            void(*Init)(struct InternetProtocolFrame*);
         }Default;
     };
 
     #define InternetProtocol\
         GetInternetProtocolInterface()->
+
 #endif

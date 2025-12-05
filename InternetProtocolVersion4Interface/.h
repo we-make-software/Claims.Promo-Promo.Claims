@@ -1,6 +1,7 @@
 #ifndef InternetProtocolVersion4Interface_H
 #define InternetProtocolVersion4Interface_H
     #include "../InternetProtocolInterface/.h"
+    
     struct InternetProtocolVersion4Frame{
         struct InternetProtocolFrame IPF;
         u32 Address;

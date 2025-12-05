@@ -69,8 +69,5 @@
 
     #define NetworkAdapter\
             GetNetworkAdapterInterface()->
-
-   
-            
         
 #endif

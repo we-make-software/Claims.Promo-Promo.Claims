@@ -1,6 +1,7 @@
 #ifndef InternetProtocolVersion6Interface_H
 #define InternetProtocolVersion6Interface_H
     #include "../AddressResolutionProtocolInterface/.h"
+    
     struct InternetProtocolVersion6Frame{
         struct InternetProtocolFrame IPF;
         u64 LowAddress,HighAddress;
