@@ -5,6 +5,25 @@ MemoryCacheBody(InternetProtocolVersion4Frame,{
     this->IPF.Version=4;
     InternetProtocol Default.Init(&this->IPF);
 }
+TX{
+    u16*data16=(u16*)(data);
+    u32 sum=data16[0]+data16[1]+data16[4]+data16[6]+data16[7]+data16[8]+data16[9];
+    while(sum>>16)
+        sum=(sum&65535)+(sum>>16);
+    data16[5]=~sum&65535;
+}
+static u64 SKBNLH;
+SKBTX(struct InternetProtocolFrame*ipf,u8*nextHeader){
+    SKBTXGet(Gateway,ipf->link.Router,InternetProtocolVersion4 Default.Type);
+    u8*data=skb_put(skb,20);
+    skb->transport_header=skb->tail;
+    *(u64*)(data)=SKBNLH;
+    data[8]=64;
+    data[9]=*nextHeader;  
+    *(u32*)(data+12)=((struct InternetProtocolVersion4Frame*)ipf->link.Server)->Address;
+    *(u32*)(data+16)=((struct InternetProtocolVersion4Frame*)ipf)->Address;
+    SKBTXReturn;
+}
 Static struct InternetProtocolFrame*DualClient(struct InternetProtocolFrame*ipf,u8*address){
     if(!list_empty(&ipf->list.Clients)){
         struct InternetProtocolVersion4Frame*Head=list_first_entry(&ipf->list.Clients,struct InternetProtocolVersion4Frame,IPF.list.this),
@@ -108,10 +127,13 @@ RX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
 BootstrapBody({
     InternetProtocolVersion4 Memory.I.Exit(); 
 }){
+    SKBNLH=htonll(69);
     InternetProtocolVersion4 Memory.I.Init();
 }
 LibraryBody(InternetProtocolVersion4Interface,
     BootstrapLibraryBody,
+    TXLibraryBody,
     RXLibraryBody,
+    SKBTXLibraryBody,
     {MemoryCacheBodyFunction(InternetProtocolVersion4Frame)},
     {htons(2048)})

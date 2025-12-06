@@ -1,14 +1,34 @@
+#define OnlyForInternetProtocolInterface
 #include "../.h"
+// Add if wee got future IPvX protocols
 Void DefaultAutoChoiceExit(struct InternetProtocolFrame*ipf){
     switch(ipf->Version)
     {
-        case 4:
-            InternetProtocolVersion4 Memory.I.Free((struct InternetProtocolVersion4Frame*)ipf);
+        case 4:InternetProtocolVersion4 Memory.I.Free((struct InternetProtocolVersion4Frame*)ipf);
         break;
-        case 6:
-            InternetProtocolVersion6 Memory.I.Free((struct InternetProtocolVersion6Frame*)ipf);
+        case 6:InternetProtocolVersion6 Memory.I.Free((struct InternetProtocolVersion6Frame*)ipf);
         break;
     }
+}
+Void DefaultSend(struct InternetProtocolFrame*ipf,struct GatewayDevice*gd,struct sk_buff* skb){
+    switch(ipf->Version)
+    {
+        case 4:TXGetChoice(InternetProtocolVersion4); 
+        case 6:TXGetChoice(InternetProtocolVersion6);
+    }
+    AtomicDecrements(&ipf->link.Server->status.response);
+    AtomicDecrements(&ipf->status.response);    
+    Gateway Default.Send(gd,skb);
+}
+
+SKBTX(struct InternetProtocolFrame*ipf,u8*nextHeader){
+    if(!ipf->Client)return NULL;
+    switch(ipf->Version)
+    {
+        case 4:SKBTXChoice(InternetProtocolVersion4);      
+        case 6:SKBTXChoice(InternetProtocolVersion6);
+    }
+    return NULL;
 }
 DelayedBackgroundTask(InternetProtocolFrame,worker){
     DefaultAutoChoiceExit(this);
@@ -73,6 +93,5 @@ RX(u8*nextHeader,struct InternetProtocolFrame*ipf,struct NetworkAdapterInterface
     AtomicDecrements(&ipf->link.Server->status.request);
     DefaultDelaySet(ipf);
     DefaultDelaySet(ipf->link.Server);
-
 }
-LibraryBody(InternetProtocolInterface,RXLibraryBody,{DefaultDelete,DefaultExit,DefaultInit})
+LibraryBody(InternetProtocolInterface,RXLibraryBody,SKBTXLibraryBody,{DefaultDelete,DefaultExit,DefaultInit})

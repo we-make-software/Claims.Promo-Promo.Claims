@@ -30,6 +30,8 @@
     #define RXLibraryHeader(...)\
         struct{void(*RW)(__VA_ARGS__);}NALH
     
+  
+
     LibraryHeader(GatewayInterface){
         BootstrapLibraryHeader;
         RXLibraryHeader(struct NetworkAdapterInterfaceReceiver*);
@@ -63,7 +65,7 @@
     #define RXData\
         nair->data
 
-    #define RXMove(length) \
+    #define RXMove(length)\
         RXData+=length
 
 

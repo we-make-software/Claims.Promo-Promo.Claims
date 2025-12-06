@@ -8,7 +8,9 @@
     };
     LibraryHeader(InternetProtocolVersion6Interface){
         BootstrapLibraryHeader;
+        TXLibraryHeader;
         RXLibraryHeader(struct GatewayDevice*,struct NetworkAdapterInterfaceReceiver*);
+        SKBTXLibraryHeader(struct InternetProtocolFrame*,u8*);
         struct{
             MemoryCacheHeaderFunction(InternetProtocolVersion6Frame)I;
         }Memory;

@@ -8,7 +8,9 @@
     };
     LibraryHeader(InternetProtocolVersion4Interface){
         BootstrapLibraryHeader;
+        TXLibraryHeader;
         RXLibraryHeader(struct GatewayDevice*,struct NetworkAdapterInterfaceReceiver*);
+        SKBTXLibraryHeader(struct InternetProtocolFrame*,u8*);
         struct{
             MemoryCacheHeaderFunction(InternetProtocolVersion4Frame)I;
         }Memory;
@@ -17,8 +19,7 @@
         }Default;
     };
 
-    #define InternetProtocolVersion4 \
+    #define InternetProtocolVersion4\
         GetInternetProtocolVersion4Interface()->
-
 
 #endif

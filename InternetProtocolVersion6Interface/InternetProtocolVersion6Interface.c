@@ -5,6 +5,22 @@ MemoryCacheBody(InternetProtocolVersion6Frame,{
     this->IPF.Version=6;
     InternetProtocol Default.Init(&this->IPF);
 }
+TX{}
+static u32 SKBNLH=htonl(6);
+SKBTX(struct InternetProtocolFrame*ipf,u8*nextHeader){
+    SKBTXGet(Gateway,ipf->link.Router,InternetProtocolVersion6 Default.Type);
+    u8*data=skb_put(skb,40);
+    *(u32*)(data)=SKBNLH;
+    data[6]=*nextHeader;
+    data[7]=64;
+    u64*LowDestinationAddress=(u64*)(data+24);
+    *(u64*)(data+8)=((struct InternetProtocolVersion6Frame*)ipf->link.Server)->LowAddress;
+    *(u64*)(data+16)=((struct InternetProtocolVersion6Frame*)ipf->link.Server)->HighAddress;
+    *(u64*)(data+24)=((struct InternetProtocolVersion6Frame*)ipf)->LowAddress;
+    *(u64*)(data+32)=((struct InternetProtocolVersion6Frame*)ipf)->HighAddress;
+    skb->transport_header=skb->tail;
+    SKBTXReturn;
+}
 Static struct InternetProtocolFrame*DualClient(struct InternetProtocolFrame*ipf,u8*address){
     if(!list_empty(&ipf->list.Clients)){
         struct InternetProtocolVersion6Frame*Head=list_first_entry(&ipf->list.Clients,struct InternetProtocolVersion6Frame,IPF.list.this),
@@ -41,7 +57,7 @@ Static struct InternetProtocolFrame*Client(struct InternetProtocolFrame*ipf,u8*a
             Unlock(&ipf->lock.this);
             return NULL;
         }
-        ipv6f->LowAddress=*(u64*)address;
+        ipv6f->LowAddress=*(u64*)(address);
         ipv6f->HighAddress=*(u64*)(address+8);
         ipv6f->IPF.link.Server=ipf;
         ipv6f->IPF.Client=true;
@@ -85,7 +101,7 @@ Static struct InternetProtocolFrame*Server(struct GatewayDevice*gd,u8*address){
             Unlock(&gd->lock.Servers);
             return NULL;
         }
-        ipv6f->LowAddress=*(u64*)address;
+        ipv6f->LowAddress=*(u64*)(address);
         ipv6f->HighAddress=*(u64*)(address+8);
         ipv6f->IPF.link.Router=gd;
         list_add(&ipv6f->IPF.list.this,&gd->list.Servers);  
@@ -113,10 +129,13 @@ RX(struct GatewayDevice*gd,struct NetworkAdapterInterfaceReceiver*nair){
 BootstrapBody({
     InternetProtocolVersion6 Memory.I.Exit();  
 }){
+   
     InternetProtocolVersion6 Memory.I.Init();
 }
 LibraryBody(InternetProtocolVersion6Interface,
     BootstrapLibraryBody,
+    TXLibraryBody,
     RXLibraryBody,
+    SKBTXLibraryBody,
     {MemoryCacheBodyFunction(InternetProtocolVersion6Frame)},
     {htons(34525)})
