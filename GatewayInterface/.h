@@ -69,10 +69,6 @@
         RXData+=length
 
 
-    #define TXGatewayCancel\
-        Gateway Default.Cancel(gd, skb)    
-
-    
     #define GatewayDeviceExpiry(m)\
         Atomic64AddMinutes(&gd->status.expiry,m);
 

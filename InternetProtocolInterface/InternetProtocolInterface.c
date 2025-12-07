@@ -4,17 +4,15 @@
 Void DefaultAutoChoiceExit(struct InternetProtocolFrame*ipf){
     switch(ipf->Version)
     {
-        case 4:InternetProtocolVersion4 Memory.I.Free((struct InternetProtocolVersion4Frame*)ipf);
-        break;
-        case 6:InternetProtocolVersion6 Memory.I.Free((struct InternetProtocolVersion6Frame*)ipf);
-        break;
+        case 4:NodeAutoChoiceExit(4);
+        case 6:NodeAutoChoiceExit(6);
     }
 }
 Void DefaultSend(struct InternetProtocolFrame*ipf,struct GatewayDevice*gd,struct sk_buff* skb){
     switch(ipf->Version)
     {
-        case 4:TXGetChoice(InternetProtocolVersion4); 
-        case 6:TXGetChoice(InternetProtocolVersion6);
+        case 4:TXGetChoice(4);
+        case 6:TXGetChoice(6);
     }
     AtomicDecrements(&ipf->link.Server->status.response);
     AtomicDecrements(&ipf->status.response);    
@@ -47,7 +45,7 @@ Void DefaultExit(struct GatewayDevice*gd){
         DefaultAutoChoiceExit(entry);
 }
 Void DefaultDelete(struct InternetProtocolFrame*ipf){
-    //where are here when wee call DefaultAutoChoiceExit
+    //where are here when wee call DefaultAutoChoiceExit or any delete for the ip 
     if(ipf->Client){
         Lock(&ipf->link.Server->lock.this);
             list_del(&ipf->list.this);
@@ -94,8 +92,8 @@ RX(u8*nextHeader,struct InternetProtocolFrame*ipf,struct NetworkAdapterInterface
         CancelDelayedWorkInternetProtocolFrameworker(ipf);
         Unlock(&ipf->lock.this);
     }
-    //here wee need to check if wee still got time
-    RXTestTime;
+    if(!ipf->Block)
+        RXCall(Transport,nextHeader,ipf,nair);
     AtomicDecrements(&ipf->status.request);
     AtomicDecrements(&ipf->link.Server->status.request);
     DefaultDelaySet(ipf);

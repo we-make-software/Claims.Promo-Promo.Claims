@@ -1,9 +1,6 @@
 #ifndef InternetProtocolInterface_H
 #define InternetProtocolInterface_H
     #include "../GatewayInterface/.h"
-    
-
-
 
     #define TXLibraryBody\
         {DTXS}  
@@ -20,7 +17,7 @@
     struct InternetProtocolFrame{
         u8 Version:5,Client:1,Verified:1,Block:1;
         struct{
-            struct list_head this,Clients;
+            struct list_head this,Clients,Transports;
         }list;
         struct{
             spinlock_t this;
@@ -65,21 +62,14 @@
             SKBTXReturn;\
         }     
 
-        #define TXGetChoice(name)\
-            name NALO.TW((u8*)skb->network_header);break\
+        #define TXGetChoice(version)\
+             GetInternetProtocolVersion##version##Interface()->NALO.TW((u8*)skb->network_header);break\
 
-        #define TXCancelGetChoice(name)\
-            name NALC.TW((u8*)skb->network_header);break\    
+        #define NodeAutoChoiceExit(version)\
+            GetInternetProtocolVersion##version##Interface()->Memory.I.Free((struct InternetProtocolVersion##version##Frame*)ipf);break;   
     
     #endif
 
-  
-
-    #define TXInternetProtocolCancel{\
-        AtomicDecrements(&ipf->link.Server->status.response);\
-        AtomicDecrements(&ipf->status.response);\
-        TXGatewayCancel;\
-    }
 
     #define InternetProtocol\
         GetInternetProtocolInterface()->
