@@ -10,7 +10,6 @@ SKBTX(struct GatewayDevice*GD,u16*type){
     if(!GD||GD->Default.block||!HasEnoughSpaceBytes(sizeof(struct sk_buff)+1514))
         return NULL;
     SKBTXGet(NetworkAdapter,GD->NAD);
-    AtomicIncrements(&GD->status.response);
     if(AtomicIncrements(&GD->status.response)==1&&!AtomicValue(&GD->status.request)){
         Lock(&GD->lock.this);
         CancelDelayedWorkGatewayDeviceworker(GD);

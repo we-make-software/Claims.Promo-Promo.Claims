@@ -2,6 +2,16 @@
 #define InternetProtocolInterface_H
     #include "../GatewayInterface/.h"
     
+    #define TXCancelLibraryBody\
+        {DTXC}  
+
+    #define TXCancelLibraryHeader\
+        struct{void(*TW)(u8*);}NALC
+
+    #define TXCancel\
+        Void DTXC(u8*data)
+
+
     #define TXLibraryBody\
         {DTXS}  
 
@@ -64,6 +74,9 @@
 
         #define TXGetChoice(name)\
             name NALO.TW((u8*)skb->network_header);break\
+
+        #define TXCancelGetChoice(name)\
+            name NALC.TW((u8*)skb->network_header);break\    
     
     #endif
 

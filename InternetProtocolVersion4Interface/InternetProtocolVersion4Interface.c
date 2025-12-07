@@ -5,6 +5,7 @@ MemoryCacheBody(InternetProtocolVersion4Frame,{
     this->IPF.Version=4;
     InternetProtocol Default.Init(&this->IPF);
 }
+TXCancel{}
 TX{
     u16*data16=(u16*)(data);
     u32 sum=data16[0]+data16[1]+data16[4]+data16[6]+data16[7]+data16[8]+data16[9];
@@ -133,6 +134,7 @@ BootstrapBody({
 LibraryBody(InternetProtocolVersion4Interface,
     BootstrapLibraryBody,
     TXLibraryBody,
+    TXCancelLibraryBody,
     RXLibraryBody,
     SKBTXLibraryBody,
     {MemoryCacheBodyFunction(InternetProtocolVersion4Frame)},

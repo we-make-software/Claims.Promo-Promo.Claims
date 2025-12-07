@@ -9,6 +9,7 @@
     LibraryHeader(InternetProtocolVersion6Interface){
         BootstrapLibraryHeader;
         TXLibraryHeader;
+        TXCancelLibraryHeader;
         RXLibraryHeader(struct GatewayDevice*,struct NetworkAdapterInterfaceReceiver*);
         SKBTXLibraryHeader(struct InternetProtocolFrame*,u8*);
         struct{
