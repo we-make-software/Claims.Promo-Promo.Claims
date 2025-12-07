@@ -2,14 +2,7 @@
 #define InternetProtocolInterface_H
     #include "../GatewayInterface/.h"
     
-    #define TXCancelLibraryBody\
-        {DTXC}  
 
-    #define TXCancelLibraryHeader\
-        struct{void(*TW)(u8*);}NALC
-
-    #define TXCancel\
-        Void DTXC(u8*data)
 
 
     #define TXLibraryBody\

@@ -5,7 +5,6 @@ MemoryCacheBody(InternetProtocolVersion6Frame,{
     this->IPF.Version=6;
     InternetProtocol Default.Init(&this->IPF);
 }
-TXCancel{}
 TX{}
 static u32 SKBNLH=htonl(6);
 SKBTX(struct InternetProtocolFrame*ipf,u8*nextHeader){
@@ -136,7 +135,6 @@ BootstrapBody({
 LibraryBody(InternetProtocolVersion6Interface,
     BootstrapLibraryBody,
     TXLibraryBody,
-    TXCancelLibraryBody,
     RXLibraryBody,
     SKBTXLibraryBody,
     {MemoryCacheBodyFunction(InternetProtocolVersion6Frame)},

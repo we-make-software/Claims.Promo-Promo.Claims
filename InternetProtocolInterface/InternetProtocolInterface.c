@@ -21,11 +21,6 @@ Void DefaultSend(struct InternetProtocolFrame*ipf,struct GatewayDevice*gd,struct
     Gateway Default.Send(gd,skb);
 }
 Void DefaultCancel(struct InternetProtocolFrame*ipf,struct GatewayDevice*gd,struct sk_buff* skb){
-    switch(ipf->Version)
-    {
-        case 4:TXCancelGetChoice(InternetProtocolVersion4); 
-        case 6:TXCancelGetChoice(InternetProtocolVersion6);
-    }
     AtomicDecrements(&ipf->link.Server->status.response);
     AtomicDecrements(&ipf->status.response);    
     Gateway Default.Cancel(gd,skb);
