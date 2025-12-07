@@ -1,6 +1,6 @@
 #ifndef SecureShellInterface_H
 #define SecureShellInterface_H
-    #include "../InternetProtocolVersion6Interface/.h"
+    #include "../TransportInterface/.h"
 
     LibraryHeader(SecureShellInterface){
         struct{

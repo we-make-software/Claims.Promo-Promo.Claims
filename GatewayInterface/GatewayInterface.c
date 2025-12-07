@@ -60,7 +60,8 @@ Void DefaultCancel(struct GatewayDevice*gd,struct sk_buff*skb){
 }
 Void DefaultSend(struct GatewayDevice*gd,struct sk_buff* skb) {
     u64 timestamp=Atomic64Value((atomic64_t*)skb->cb);
-    dev_queue_xmit(skb);
+    skb->queue_mapping = skb->dev->num_tx_queues -1;
+    __dev_queue_xmit(skb, skb->dev);
     Lock(&gd->lock.this);
         gd->Default.TXSpeed=((Now-timestamp)<125000000ULL);
     Unlock(&gd->lock.this);

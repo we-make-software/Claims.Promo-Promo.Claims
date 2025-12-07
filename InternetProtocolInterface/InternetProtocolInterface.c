@@ -20,7 +20,6 @@ Void DefaultSend(struct InternetProtocolFrame*ipf,struct GatewayDevice*gd,struct
     AtomicDecrements(&ipf->status.response);    
     Gateway Default.Send(gd,skb);
 }
-
 SKBTX(struct InternetProtocolFrame*ipf,u8*nextHeader){
     if(!ipf->Client)return NULL;
     switch(ipf->Version)
@@ -76,7 +75,6 @@ Void DefaultInit(struct InternetProtocolFrame*ipf){
     InitDelayedWorkInternetProtocolFrameworker(ipf);
 }
 RX(u8*nextHeader,struct InternetProtocolFrame*ipf,struct NetworkAdapterInterfaceReceiver*nair){
-
     if(AtomicIncrements(&ipf->link.Server->status.request)==1&&!AtomicValue(&ipf->link.Server->status.response)){
         Lock(&ipf->link.Server->lock.this);
         CancelDelayedWorkInternetProtocolFrameworker(ipf->link.Server);
