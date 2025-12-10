@@ -1,0 +1,3 @@
+#ifndef DynamicHostConfigurationProtocolVersion4_H
+#define DynamicHostConfigurationProtocolVersion4_H
+#endif

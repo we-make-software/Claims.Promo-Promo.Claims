@@ -1,4 +1,5 @@
 #define OnlyForApplicationProgrammingInterface
+#define OnlyForBootstrapInterfaceInterface
 #include "../.h"
 struct Content{
     u8*Name;
@@ -12,7 +13,7 @@ static void DefaultRegister(u8*Name,void*Library){
     INIT_LIST_HEAD(&this->List);
     list_add(&this->List,&Contents);
 }
-Void RemoveAll(void){
+static void RemoveAll(void){
     struct Content*this,*temporary;
     list_for_each_entry_safe(this,temporary,&Contents,List){
         list_del(&this->List);
@@ -22,15 +23,15 @@ Void RemoveAll(void){
 static void DefaultInit(void){
     if(Main.Default.Status)return;
     Main.Default.Status=true;
-    GetBootstrapInterface()->BI.BO();
+    Bootstrap Open;
 }
-Static bool ExitEvent=false;
-static void DefaultExit(void){
 
+static void DefaultExit(void){
+    static bool ExitEvent=false;
     if(!Main.Default.Status||ExitEvent)return;
     ExitEvent=true;
     Main.Default.Status=false;
-    GetBootstrapInterface()->BI.BC();
+    Bootstrap Close;
     RemoveAll();
 }
 static void*DefaultGet(u8*name){
@@ -45,13 +46,13 @@ static void DefaultRestart(void){
     kernel_restart(NULL);
 }
 static u64 DefaultSpaces(void){
-    struct sysinfo info;
-    si_meminfo(&info);
-    return((u64)info.freeram+info.bufferram)*info.mem_unit;
+    //struct sysinfo info;
+    //si_meminfo(&info);
+    return 0;// ((u64)info.freeram+info.bufferram)*info.mem_unit;
 }
 struct ApplicationProgrammingInterface Main={{DefaultInit,DefaultExit,DefaultRestart,DefaultGet,DefaultRegister,DefaultSpaces,false}};
 struct ApplicationProgrammingInterface*GetApplicationProgrammingInterface(void){
-    return &Main;
+    return&Main;
 }
 EXPORT_SYMBOL(GetApplicationProgrammingInterface);
 OverwriteLauncherInterface_Setup(ApplicationProgrammingInterface){}

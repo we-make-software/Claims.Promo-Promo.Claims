@@ -8,18 +8,43 @@
     #include <linux/if_packet.h>
     #include <linux/ktime.h>
     #include <linux/slab.h>
+    #include <linux/types.h>
+    #include <linux/atomic.h>
+    #ifdef __INTELLISENSE__
+        typedef struct { s64 counter; } atomic64_t;
+    #endif
+
+    struct EthernetII{
+        u8 dst[6];
+        u8 src[6];
+        __be16 type; 
+    }__attribute__((packed));
+    struct IPv4Header{
+        __be16 version_ihl_tos,tot_len;
+        __be32 id_frag;
+        u8 hop_limit,nexthdr;
+        __be16 check;
+        __be32 saddr,daddr;
+    }__attribute__((packed));
+    struct IPv6Header {
+        __be32 version_tc_flow;
+        __be16 payload_len;
+        u8 nexthdr,hop_limit;
+        __be32 saddr[4],daddr[4];
+    } __attribute__((packed));
+
+
 
     struct NetworkAdapterInterfaceReceiver{
         struct NetworkAdapterDevice*NAD;
         struct sk_buff*skb;
-        u8*data;
         atomic64_t start;
         struct{
-            struct list_head tasks,pointers;
+            struct list_head data;
         }list;
         struct{
             struct work_struct worker;
-        }BackgroundTask;
+        }bt;
     };
     enum Process{Overloaded,Processed};
     struct NetworkAdapterDevice{
@@ -51,18 +76,7 @@
     };
 
  
-    #define RXLibraryBody\
-            {RC}
-
-    #define SKBTX(...)\
-        Struct sk_buff*DTXC(__VA_ARGS__)
-
-    #define SKBTXGet(name,...)\
-        struct sk_buff*skb=name TXLH.C(__VA_ARGS__);\
-        if(!skb)return NULL
-
-    #define SKBTXReturn\
-        return skb    
+ 
 
     #define NetworkAdapter\
             GetNetworkAdapterInterface()->

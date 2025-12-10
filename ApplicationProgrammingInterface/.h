@@ -1,8 +1,12 @@
 #ifndef ApplicationProgrammingInterface_H
 #define ApplicationProgrammingInterface_H
     #include "../LauncherInterface/.h"
+    #include <linux/types.h>
     #define Atomic64Header(...) \
         atomic64_t __VA_ARGS__
+
+    #define ApplicationProgramming\
+        GetApplicationProgrammingInterface()->    
 
     struct ApplicationProgrammingInterface{
         struct{
@@ -31,7 +35,7 @@
         __attribute__((unused)) static struct WMS##name* Get##name(void){\
             static struct WMS##name*LibraryLink=NULL;\
             if(!LibraryLink) \
-                LibraryLink=(struct WMS##name*)GetApplicationProgrammingInterface()->Default.Get(#name);\
+                LibraryLink=(struct WMS##name*)ApplicationProgramming Default.Get(#name);\
             return LibraryLink;\
         }\
         struct WMS##name
@@ -41,11 +45,7 @@
         OverwriteLauncherInterface_Setup(name){\
             static u8*Name=#name;\
             static struct WMS##name Library={__VA_ARGS__};\
-            GetApplicationProgrammingInterface()->Default.Register(Name,&Library);\
+            ApplicationProgramming Default.Register(Name,&Library);\
         }    
-    
-    #define ApplicationProgramming\
-        GetApplicationProgrammingInterface()->
-
-
+        
 #endif

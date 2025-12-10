@@ -225,29 +225,29 @@
     #define WorkBackgroundTask(name, property)\
         Void work##name##property##BackgroundTaskCallback(struct name*);\
         Void work##name##property(struct work_struct*work){\
-            work##name##property##BackgroundTaskCallback(container_of(work,struct name,BackgroundTask.property));\
+            work##name##property##BackgroundTaskCallback(container_of(work,struct name,bt.property));\
         }\
         Void InitWork##name##property(struct name*this){\
-            INIT_WORK(&this->BackgroundTask.property,work##name##property);\
+            INIT_WORK(&this->bt.property,work##name##property);\
         }\
         Void work##name##property##BackgroundTaskCallback(struct name*this)
 
  
         #define DelayedBackgroundTask(name,property) \
             Void ScheduleDelayedWork##name##property(struct name*this,unsigned long ms){\
-                schedule_delayed_work(&this->BackgroundTask.property,msecs_to_jiffies(ms));\
+                schedule_delayed_work(&this->bt.property,msecs_to_jiffies(ms));\
             }\
             Static bool CancelDelayedWork##name##property(struct name*this){\
-                return cancel_delayed_work(&this->BackgroundTask.property);\
+                return cancel_delayed_work(&this->bt.property);\
             }\
             Void delayed##name##property##Callback(struct name*);\
             Void delayed##name##property(struct work_struct*work){\
                 delayed##name##property##Callback(\
-                    container_of(container_of(work,struct delayed_work,work),struct name,BackgroundTask.property)\
+                    container_of(container_of(work,struct delayed_work,work),struct name,bt.property)\
                 );\
             }\
             Void InitDelayedWork##name##property(struct name*this){\
-                INIT_DELAYED_WORK(&this->BackgroundTask.property,delayed##name##property);\
+                INIT_DELAYED_WORK(&this->bt.property,delayed##name##property);\
             }\
             Void delayed##name##property##Callback(struct name*this)
 

@@ -1,17 +1,13 @@
 #ifndef AddressResolutionProtocolInterface_H
 #define AddressResolutionProtocolInterface_H
     #include "../InternetProtocolVersion4Interface/.h"
-    
-    LibraryHeader(AddressResolutionProtocolInterface){
+
+    LibraryHeader(AddressResolutionProtocolInterface) {
         BootstrapLibraryHeader;
-        RXLibraryHeader(struct GatewayDevice*,struct NetworkAdapterInterfaceReceiver*);
-        struct{
-            u16 Type;
-        }Default;
+        void(*RX0)(struct NetworkAdapterInterfaceReceiver*,struct EthernetII*);
     };
 
     #define AddressResolutionProtocol\
         GetAddressResolutionProtocolInterface()->
-
 
 #endif
