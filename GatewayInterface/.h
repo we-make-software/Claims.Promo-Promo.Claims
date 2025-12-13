@@ -3,11 +3,16 @@
     #include "../NetworkAdapterInterface/.h"
 
     LibraryHeader(GatewayInterface){
-        BootstrapLibraryHeader;
-        void(*RX0)(struct NetworkAdapterInterfaceReceiver*,struct EthernetII*);
+        struct{
+            struct sk_buff*(*TX0)(struct NetworkAdapterDevice*);
+        }IPV4I;
+        struct{
+            struct sk_buff*(*TX0)(struct NetworkAdapterDevice*);  
+        }IPV6I;
     };
 
     #define Gateway\
         GetGatewayInterface()->
+
 
 #endif

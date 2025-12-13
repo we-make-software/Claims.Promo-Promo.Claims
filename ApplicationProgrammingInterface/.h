@@ -31,20 +31,20 @@
         LauncherInterface_Setup(name)
 
     #define LibraryHeader(name) \
-        struct WMS##name; \
-        __attribute__((unused)) static struct WMS##name* Get##name(void){\
-            static struct WMS##name*LibraryLink=NULL;\
+        struct PCCP##name; \
+        __attribute__((unused)) static struct PCCP##name* Get##name(void){\
+            static struct PCCP##name*LibraryLink=NULL;\
             if(!LibraryLink) \
-                LibraryLink=(struct WMS##name*)ApplicationProgramming Default.Get(#name);\
+                LibraryLink=(struct PCCP##name*)ApplicationProgramming Default.Get(#name);\
             return LibraryLink;\
         }\
-        struct WMS##name
+        struct PCCP##name
 
      
     #define LibraryBody(name,...)\
         OverwriteLauncherInterface_Setup(name){\
             static u8*Name=#name;\
-            static struct WMS##name Library={__VA_ARGS__};\
+            static struct PCCP##name Library={__VA_ARGS__};\
             ApplicationProgramming Default.Register(Name,&Library);\
         }    
         

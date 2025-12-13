@@ -117,6 +117,7 @@
 
     #define Bootstrap\
         GetBootstrapInterface()->
+        
 
     #define Now\
         ktime_get_ns() 

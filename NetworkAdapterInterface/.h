@@ -14,26 +14,11 @@
         typedef struct { s64 counter; } atomic64_t;
     #endif
 
-    struct EthernetII{
+    struct SKBEthernetII{
         u8 dst[6];
         u8 src[6];
         __be16 type; 
     }__attribute__((packed));
-    struct IPv4Header{
-        __be16 version_ihl_tos,tot_len;
-        __be32 id_frag;
-        u8 hop_limit,nexthdr;
-        __be16 check;
-        __be32 saddr,daddr;
-    }__attribute__((packed));
-    struct IPv6Header {
-        __be32 version_tc_flow;
-        __be16 payload_len;
-        u8 nexthdr,hop_limit;
-        __be32 saddr[4],daddr[4];
-    } __attribute__((packed));
-
-
 
     struct NetworkAdapterInterfaceReceiver{
         struct NetworkAdapterDevice*NAD;
@@ -65,7 +50,7 @@
    
     LibraryHeader(NetworkAdapterInterface){
         BootstrapLibraryHeader;
-        SKBTXLibraryHeader(struct NetworkAdapterDevice*);
+        struct sk_buff*(*TX0)(struct NetworkAdapterDevice*,struct SKBEthernetII**);
         struct{
             MemoryCacheHeaderFunction(NetworkAdapterInterfaceReceiver)NAIR;
             MemoryCacheHeaderFunction(NetworkAdapterDevice)NAD;
@@ -80,5 +65,7 @@
 
     #define NetworkAdapter\
             GetNetworkAdapterInterface()->
+
+
         
 #endif

@@ -1,7 +1,4 @@
 #include "../.h"
-static const __be16 ETH_ARP=__constant_htons(2054);
-static const __be16 ETH_IPv4=__constant_htons(2048);
-static const __be16 ETH_IPv6=__constant_htons(34525);
 WorkBackgroundTask(NetworkAdapterInterfaceReceiver,worker){
     Lock(&this->NAD->lock.this);
     if(this->NAD->Status==Overloaded||Now>Atomic64Value(&this->start)){
@@ -9,17 +6,17 @@ WorkBackgroundTask(NetworkAdapterInterfaceReceiver,worker){
         goto Cancel;
     }
     Unlock(&this->NAD->lock.this);
-    atomic64_set(&this->start, Now + 120000000ULL); 
-    struct EthernetII*eII=(struct EthernetII *)skb_mac_header(this->skb);
+    atomic64_set(&this->start,Now+120000000ULL); 
+    struct SKBEthernetII*eII=(struct SKBEthernetII *)skb_mac_header(this->skb);
     switch (eII->type) {
         case ETH_ARP:
-            AddressResolutionProtocol RX0(this,eII);
+            AddressResolutionProtocol NAI.RX0(this,eII);
             break;
         case ETH_IPv4:
-            InternetProtocolVersion4 RX0(this, eII);
+            InternetProtocolVersion4 NAI.RX0(this, eII);
             break;
         case ETH_IPv6:
-            InternetProtocolVersion6 RX0(this, eII);
+            InternetProtocolVersion6 NAI.RX0(this, eII);
             break;
     }
     Cancel:
@@ -45,13 +42,12 @@ MemoryCacheBody(NetworkAdapterDevice,{
 
 static int NAIPF(struct sk_buff*skb,struct net_device*,struct packet_type*pt,struct net_device*){
     if(!skb||!skb->dev||skb->len<34||skb->pkt_type==PACKET_OUTGOING||!ApplicationProgramming Default.Status)return NET_RX_SUCCESS;
-    struct EthernetII *eII = (struct EthernetII *)skb_mac_header(skb);
+    struct SKBEthernetII*eII=(struct SKBEthernetII*)skb_mac_header(skb);
     if(!eII)return NET_RX_SUCCESS;
-
     if(eII->type!=ETH_IPv4&&eII->type!=ETH_IPv6&&eII->type!=ETH_ARP)return NET_RX_SUCCESS;
     #ifdef MODULE
         static const __be16 SSP=__constant_htons(22);
-        if(eII->type!=ETH_ARP&&(((eII->type==ETH_IPv4)?((struct IPv4Header*)skb_network_header(skb))->nexthdr:((struct IPv6Header*)skb_network_header(skb))->nexthdr)==SSP))return NET_RX_SUCCESS;
+        if(eII->type!=ETH_ARP&&(((eII->type==ETH_IPv4)?((struct SKBIPv4*)skb_network_header(skb))->nexthdr:((struct SKBIPv6*)skb_network_header(skb))->nexthdr)==SSP))return NET_RX_SUCCESS;
     #endif  
     struct NetworkAdapterDevice*NAD=container_of(pt,struct NetworkAdapterDevice, packet); 
     Lock(&NAD->lock.this);
@@ -88,7 +84,7 @@ Static u8 Exists(struct net_device*n)
 }
 BootstrapBody({
     struct NetworkAdapterDevice*NAD,*tmp_NAD;
- 
+
     NAD=NULL;   
     list_for_each_entry(NAD,&NetworkAdapter Default.this, list.this)
         dev_remove_pack(&NAD->packet);
@@ -114,8 +110,30 @@ BootstrapBody({
         dev_add_pack(&NAD->packet);
     }
     synchronize_net();
-
+    struct NetworkAdapterDevice*NAD;
+    list_for_each_entry(NAD,&NetworkAdapter Default.this,list.this){
+        DynamicHostConfigurationProtocolVersion4Client NAI.Init(NAD);
+        DynamicHostConfigurationProtocolVersion6Client NAI.Init(NAD);  
+    }
 }
+
+Struct sk_buff*TX0(struct NetworkAdapterDevice*NAD,struct SKBEthernetII**skbeII){
+    if(!NAD)return NULL;
+    struct sk_buff*skb=alloc_skb(1518, GFP_KERNEL);
+    if(!skb)return NULL;
+    skb->priority=0;
+    skb->mark=0;  
+    skb_reset_mac_header(skb);
+    *skbeII=(struct SKBEthernetII*)skb_put(skb,12);
+    memcpy((*skbeII)->src,NAD->packet.dev->dev_addr,6);
+    skb->dev=NAD->packet.dev;
+    skb->ip_summed=CHECKSUM_NONE;
+    atomic64_set((atomic64_t*)skb->cb,Now+120000000ULL); 
+    skb->network_header=skb->tail;
+    return skb;
+}
+
 LibraryBody(NetworkAdapterInterface,
     BootstrapLibraryBody,
+    TX0,
     {MemoryCacheBodyFunction(NetworkAdapterInterfaceReceiver),MemoryCacheBodyFunction(NetworkAdapterDevice)})
