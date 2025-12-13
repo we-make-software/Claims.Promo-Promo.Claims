@@ -3,7 +3,7 @@
     #include "../TransportVersion4Interface/.h"
     LibraryHeader(TransportVersion6Interface){
         struct{
-            void(*RX0)(struct NetworkAdapterInterfaceReceiver*,struct SKBEthernetII*,struct SKBIPv6*)
+            void(*RX0)(struct NetworkAdapterInterfaceReceiver*,struct SKBEthernetII*,struct SKBIPv6*);
         }IPV6I;
     };
 

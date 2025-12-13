@@ -14,7 +14,7 @@
             void(*RX0)(struct NetworkAdapterInterfaceReceiver*,struct SKBEthernetII*);
         }NAI; 
         struct{
-            struct sk_buff*(*TX0)(struct NetworkAdapterDevice*)
+            struct sk_buff*(*TX0)(struct NetworkAdapterDevice*);
         }TV4I;
     };
 

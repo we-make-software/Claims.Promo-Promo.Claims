@@ -11,7 +11,7 @@
     
     LibraryHeader(TransportVersion4Interface){
         struct{
-            void(*RX0)(struct NetworkAdapterInterfaceReceiver*,struct SKBEthernetII*,struct SKBIPv4*)
+            void(*RX0)(struct NetworkAdapterInterfaceReceiver*,struct SKBEthernetII*,struct SKBIPv4*);
         }IPV4I;
     };
 
